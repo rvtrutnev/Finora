@@ -556,13 +556,32 @@ let wallets = [], receivables = [], debts = [], budgetItems = [], categories = J
 let categoriesRowId = null; // id строки в таблице categories
 
 // ==================== DB HELPERS ====================
+function showToast(msg, type = 'error') {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;max-width:320px;text-align:center;transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = type === 'error' ? '#2d1a1e' : '#111c15';
+  t.style.color = type === 'error' ? '#e74c3c' : '#2ecc71';
+  t.style.border = `1px solid ${type === 'error' ? '#c0392b' : '#1a9a5c'}`;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
 async function dbUpsert(table, row) {
   const { error } = await sb.from(table).upsert(row);
-  if (error) console.error(table, error);
+  if (error) { console.error(table, error); return error; }
+  return null;
 }
 async function dbDelete(table, id) {
   const { error } = await sb.from(table).delete().eq('id', id);
-  if (error) console.error(table, error);
+  if (error) { console.error(table, error); return error; }
+  return null;
 }
 async function saveCategories() {
   const row = { data: categories };
@@ -576,7 +595,7 @@ let currentMonth = new Date();
 currentMonth.setDate(1);
 let currentDateMode = 'exact';
 
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function uid() { return crypto.randomUUID(); }
 
 function initDaySelect() {
   const sel = document.getElementById('budget-day');
@@ -673,7 +692,8 @@ async function saveWallet() {
   if (!name) return;
   const id = editId || uid();
   const row = { id, name, balance, currency };
-  await dbUpsert('wallets', row);
+  const err = await dbUpsert('wallets', row);
+  if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const w = wallets.find(x => x.id === editId); if (w) Object.assign(w, row); }
   else wallets.push(row);
   closeModal('wallet'); renderWallets();
@@ -750,7 +770,8 @@ async function saveReceivable() {
   if (!name) return;
   const id = editId || uid();
   const row = { id, name, amount, currency, date, note };
-  await dbUpsert('receivables', row);
+  const err = await dbUpsert('receivables', row);
+  if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const r = receivables.find(x => x.id === editId); if (r) Object.assign(r, row); }
   else receivables.push(row);
   closeModal('receivable'); renderReceivables();
@@ -843,9 +864,15 @@ function editDebt(id) {
 function renderDebtGroupSuggestions() {
   const existing = [...new Set(debts.map(d => d.group).filter(Boolean))];
   const container = document.getElementById('debt-group-suggestions');
-  container.innerHTML = existing.map(g =>
-    `<button type="button" onclick="document.getElementById('debt-group').value='${esc(g)}'" class="text-xs bg-dark-400 hover:bg-dark-500 text-dark-900 px-2 py-1 rounded transition">${esc(g)}</button>`
-  ).join('');
+  container.innerHTML = '';
+  existing.forEach(g => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'text-xs bg-dark-400 hover:bg-dark-500 text-dark-900 px-2 py-1 rounded transition';
+    btn.textContent = g;
+    btn.addEventListener('click', () => { document.getElementById('debt-group').value = g; });
+    container.appendChild(btn);
+  });
 }
 
 async function saveDebt() {
@@ -858,7 +885,8 @@ async function saveDebt() {
   if (!name) return;
   const id = editId || uid();
   const row = { id, name, amount, currency, group: group || null, note: note || null };
-  await dbUpsert('debts', row);
+  const err = await dbUpsert('debts', row);
+  if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const d = debts.find(x => x.id === editId); if (d) Object.assign(d, row); }
   else debts.push(row);
   closeModal('debt'); renderDebts();
@@ -954,7 +982,12 @@ function renderBudget() {
   document.getElementById('budget-month-label').textContent = monthLabel(currentMonth);
 
   const items = budgetItems.filter(b => {
-    if (b.recurring) return true;
+    if (b.recurring) {
+      // не показывать в месяцах до даты создания записи
+      const startMk = b.startMonth || (b.date ? b.date.slice(0, 7) : null);
+      if (startMk && mk < startMk) return false;
+      return true;
+    }
     return b.date && b.date.startsWith(mk);
   });
 
@@ -1143,12 +1176,14 @@ async function saveBudgetItem() {
   if (!isMonthly && !date) return;
 
   const id = editId || uid();
+  const startMonth = isMonthly && !editId ? monthKey(currentMonth) : (budgetItems.find(x => x.id === editId)?.startMonth || null);
   const dbRow = { id, type: currentBudgetType, category, subcategory: subcategory || null,
     amount, date: date || null, note: note || null, tag: tag || null,
-    recurring: isMonthly, recur_day: recurDay };
-  const memRow = { id, type: currentBudgetType, category, subcategory, amount, date, note, tag, recurring: isMonthly, recurDay };
+    recurring: isMonthly, recur_day: recurDay, start_month: startMonth };
+  const memRow = { id, type: currentBudgetType, category, subcategory, amount, date, note, tag, recurring: isMonthly, recurDay, startMonth };
 
-  await dbUpsert('budget_items', dbRow);
+  const err = await dbUpsert('budget_items', dbRow);
+  if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const item = budgetItems.find(x => x.id === editId); if (item) Object.assign(item, memRow); }
   else budgetItems.push(memRow);
   closeModal('budget'); renderBudget();
@@ -1156,7 +1191,8 @@ async function saveBudgetItem() {
 
 async function deleteBudgetItem(id) {
   if (!confirm('Удалить запись?')) return;
-  await dbDelete('budget_items', id);
+  const err = await dbDelete('budget_items', id);
+  if (err) { showToast('Ошибка удаления: ' + err.message); return; }
   budgetItems = budgetItems.filter(b => b.id !== id); renderBudget();
 }
 
@@ -1203,7 +1239,12 @@ async function addCategory() {
 }
 
 async function deleteCategory(type, index) {
-  if (!confirm('Удалить категорию?')) return;
+  const catName = categories[type][index]?.name;
+  const used = budgetItems.filter(b => b.type === type && b.category === catName).length;
+  const msg = used > 0
+    ? `Категория «${catName}» используется в ${used} запис${used === 1 ? 'и' : 'ях'} бюджета. Удалить всё равно?`
+    : `Удалить категорию «${catName}»?`;
+  if (!confirm(msg)) return;
   categories[type].splice(index, 1);
   await saveCategories();
   renderCategoryList();
@@ -1400,7 +1441,7 @@ async function loadAllData() {
   budgetItems = b.data?.map(x => ({
     id: x.id, type: x.type, category: x.category, subcategory: x.subcategory,
     amount: x.amount, date: x.date, note: x.note, tag: x.tag,
-    recurring: x.recurring, recurDay: x.recur_day
+    recurring: x.recurring, recurDay: x.recur_day, startMonth: x.start_month
   })) || [];
   if (c.data) { categories = c.data.data; categoriesRowId = c.data.id; }
   else { categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); await saveCategories(); }
