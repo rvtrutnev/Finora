@@ -1432,7 +1432,7 @@ async function loadAllData() {
     sb.from('receivables').select('*').order('created_at'),
     sb.from('debts').select('*').order('created_at'),
     sb.from('budget_items').select('*').order('created_at'),
-    sb.from('categories').select('*').limit(1).single(),
+    sb.from('categories').select('*').single(),
   ]);
   wallets = w.data || [];
   receivables = r.data || [];
