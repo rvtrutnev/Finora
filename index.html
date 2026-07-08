@@ -6,6 +6,7 @@
 <title>Finora</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
 tailwind.config = {
@@ -192,6 +193,23 @@ tailwind.config = {
     <div class="card rounded-xl p-4 text-center gold-border border">
       <div class="text-xs text-dark-700 mb-1 uppercase tracking-wider">Баланс</div>
       <div id="budget-balance" class="text-lg font-bold text-gold-600">0</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-1 gap-4 mb-5 md:grid-cols-2">
+    <div class="card rounded-xl p-4">
+      <div class="text-xs text-dark-700 uppercase tracking-wider mb-3">Расходы по категориям</div>
+      <div class="relative" style="height:200px">
+        <canvas id="chart-donut"></canvas>
+        <div id="chart-donut-empty" class="hidden absolute inset-0 flex items-center justify-center text-dark-700 text-xs">Нет расходов</div>
+      </div>
+    </div>
+    <div class="card rounded-xl p-4">
+      <div class="text-xs text-dark-700 uppercase tracking-wider mb-3">Доходы и расходы за 6 месяцев</div>
+      <div style="height:200px">
+        <canvas id="chart-bar"></canvas>
+      </div>
     </div>
   </div>
 
@@ -860,6 +878,71 @@ function changeMonth(delta) {
   renderBudget();
 }
 
+let chartDonut = null, chartBar = null;
+
+function renderCharts(items) {
+  // Donut — расходы по категориям за текущий месяц
+  const expenseItems = items.filter(b => b.type === 'expense');
+  const catMap = {};
+  expenseItems.forEach(b => {
+    catMap[b.category] = (catMap[b.category] || 0) + (parseFloat(b.amount) || 0);
+  });
+  const catLabels = Object.keys(catMap);
+  const catValues = Object.values(catMap);
+
+  const donutCanvas = document.getElementById('chart-donut');
+  const donutEmpty = document.getElementById('chart-donut-empty');
+  if (catLabels.length === 0) {
+    donutEmpty.classList.remove('hidden');
+    donutCanvas.style.display = 'none';
+  } else {
+    donutEmpty.classList.add('hidden');
+    donutCanvas.style.display = '';
+    const donutColors = ['#d4a849','#e8c36a','#c9ad7a','#a07d3a','#8a6a2e','#6e5424','#b8944f','#f0e9dc'];
+    if (chartDonut) chartDonut.destroy();
+    chartDonut = new Chart(donutCanvas, {
+      type: 'doughnut',
+      data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: donutColors, borderWidth: 0 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { color: '#b0b0ba', font: { size: 11 }, boxWidth: 12, padding: 8 } },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmt(ctx.raw, 'RUB') } }
+        }
+      }
+    });
+  }
+
+  // Bar — доходы и расходы за 6 месяцев
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - i, 1);
+    months.push({ key: monthKey(d), label: d.toLocaleString('ru', { month: 'short' }) });
+  }
+  const incomes = months.map(m => budgetItems.filter(b => b.type === 'income' && (b.recurring || (b.date && b.date.startsWith(m.key)))).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0));
+  const expenses = months.map(m => budgetItems.filter(b => b.type === 'expense' && (b.recurring || (b.date && b.date.startsWith(m.key)))).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0));
+
+  if (chartBar) chartBar.destroy();
+  chartBar = new Chart(document.getElementById('chart-bar'), {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [
+        { label: 'Доходы', data: incomes, backgroundColor: '#1a9a5c99', borderRadius: 4 },
+        { label: 'Расходы', data: expenses, backgroundColor: '#c0392b99', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#b0b0ba', font: { size: 11 }, boxWidth: 12 } } },
+      scales: {
+        x: { ticks: { color: '#8a8a96' }, grid: { color: '#2a2a3240' } },
+        y: { ticks: { color: '#8a8a96', callback: v => v >= 1000 ? (v/1000).toFixed(0)+'к' : v }, grid: { color: '#2a2a3240' } }
+      }
+    }
+  });
+}
+
 function renderBudget() {
   const mk = monthKey(currentMonth);
   document.getElementById('budget-month-label').textContent = monthLabel(currentMonth);
@@ -883,7 +966,7 @@ function renderBudget() {
   const list = document.getElementById('budget-list');
   const empty = document.getElementById('budget-empty');
 
-  if (!items.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  if (!items.length) { list.innerHTML = ''; empty.classList.remove('hidden'); renderCharts([]); return; }
   empty.classList.add('hidden');
 
   const grouped = {};
@@ -962,6 +1045,8 @@ function renderBudget() {
       </div>
     `;
   }).join('');
+
+  renderCharts(items);
 }
 
 function setBudgetType(type) {
