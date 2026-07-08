@@ -50,8 +50,13 @@ tailwind.config = {
 <!-- ==================== AUTH SCREEN ==================== -->
 <div id="auth-screen" class="hidden fixed inset-0 z-50 bg-dark-300 flex items-center justify-center p-4">
   <div class="card-elevated rounded-xl shadow-2xl p-8 w-full max-w-sm">
-    <h1 class="text-2xl font-semibold gold-text text-center mb-1">Finora</h1>
-    <p class="text-dark-700 text-xs text-center mb-6 uppercase tracking-wider">Личные финансы</p>
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold gold-text mb-1 tracking-tight">
+        <span>FIN</span><span class="text-dark-700">O</span><span>RA</span>
+      </h1>
+      <p class="text-dark-900 text-sm font-medium tracking-wide">Finance Organizer &amp; Analytics</p>
+      <p class="text-dark-700 text-xs mt-1">Организация и аналитика ваших финансов</p>
+    </div>
 
     <div class="flex gap-2 mb-5">
       <button onclick="setAuthMode('login')" id="auth-tab-login" class="flex-1 py-2 rounded-lg text-sm font-medium border border-gold-500 bg-gold-500/10 text-gold-600">Войти</button>
