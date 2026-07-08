@@ -120,6 +120,7 @@ tailwind.config = {
     <button onclick="showPage('debts')" id="nav-debts" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase">Долги</button>
     <button onclick="showPage('budget')" id="nav-budget" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase">Бюджет</button>
     <button onclick="showPage('calc')" id="nav-calc" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase">Калькулятор</button>
+    <button onclick="exportCSV()" title="Экспорт CSV" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition text-lg">↓</button>
     <button onclick="signOut()" title="Выйти" class="px-3 py-3.5 text-dark-700 hover:text-danger-600 transition text-lg">⏻</button>
   </div>
 </nav>
@@ -1260,6 +1261,29 @@ async function submitAuth() {
     document.getElementById('auth-confirm-email').textContent = email;
     document.getElementById('auth-confirm-screen').classList.remove('hidden');
   }
+}
+
+function exportCSV() {
+  const rows = [];
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+
+  rows.push(['Раздел','Название','Сумма','Валюта','Дата/Тип','Категория','Подкатегория','Тег','Примечание'].join(','));
+
+  wallets.forEach(w => rows.push([q('Кошелёк'), q(w.name), w.balance, q(w.currency), '', '', '', '', ''].join(',')));
+  debts.forEach(d => rows.push([q('Долг'), q(d.name), d.amount, q(d.currency ?? 'RUB'), q(d.group ?? ''), '', '', '', q(d.note ?? '')].join(',')));
+  receivables.forEach(r => rows.push([q('Мне должны'), q(r.name), r.amount, q(r.currency), q(r.date ?? ''), '', '', '', ''].join(',')));
+  budgetItems.forEach(b => rows.push([
+    q('Бюджет'), q(b.category), b.amount, q('RUB'),
+    q(b.recurring ? ('каждое ' + b.recurDay + ' число') : (b.date ?? '')),
+    q(b.category), q(b.subcategory ?? ''), q(b.tag ?? ''), q(b.note ?? '')
+  ].join(',')));
+
+  const bom = '﻿';
+  const blob = new Blob([bom + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finora_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
 }
 
 async function signOut() {
