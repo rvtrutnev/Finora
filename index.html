@@ -588,7 +588,7 @@ async function dbDelete(table, id) {
   return null;
 }
 async function saveCategories() {
-  const row = { data: categories };
+  const row = { data: categories, tags: budgetTags };
   if (categoriesRowId) row.id = categoriesRowId;
   const { data, error } = await sb.from('categories').upsert(row).select().single();
   if (!error && data) categoriesRowId = data.id;
@@ -1210,7 +1210,7 @@ async function saveBudgetItem() {
   // Если введён новый тег — добавить в список
   if (tagCustom && !budgetTags.includes(tagCustom)) {
     budgetTags.push(tagCustom);
-    localStorage.setItem('finora_tags', JSON.stringify(budgetTags));
+    saveCategories();
   }
 
   const id = editId || uid();
@@ -1488,18 +1488,20 @@ async function loadAllData() {
     amount: x.amount, currency: x.currency || 'RUB', date: x.date, note: x.note, tag: x.tag,
     recurring: x.recurring, recurDay: x.recur_day, startMonth: x.start_month
   })) || [];
-  if (c.data) { categories = c.data.data; categoriesRowId = c.data.id; }
-  else { categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); await saveCategories(); }
-  // Загружаем теги из localStorage (теги хранятся локально, не в Supabase)
-  const savedTags = localStorage.getItem('finora_tags');
-  if (savedTags) budgetTags = JSON.parse(savedTags);
+  if (c.data) {
+    categories = c.data.data;
+    categoriesRowId = c.data.id;
+    if (Array.isArray(c.data.tags) && c.data.tags.length) budgetTags = c.data.tags;
+  } else {
+    categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    await saveCategories();
+  }
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
   const loading = document.getElementById('loading-screen');
   const authScreen = document.getElementById('auth-screen');
   const nav = document.querySelector('nav');
-  const pages = document.querySelectorAll('.page');
 
   if (session) {
     authScreen.classList.add('hidden');
