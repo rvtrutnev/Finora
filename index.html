@@ -753,7 +753,8 @@ async function saveWallet() {
   const editId = document.getElementById('wallet-edit-id').value;
   if (!name) return;
   const id = editId || uid();
-  const row = { id, name, balance, currency };
+  const { data: { user } } = await sb.auth.getUser();
+  const row = { id, user_id: user.id, name, balance, currency };
   const err = await dbUpsert('wallets', row);
   if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const w = wallets.find(x => x.id === editId); if (w) Object.assign(w, row); }
@@ -832,7 +833,8 @@ async function saveReceivable() {
   const editId = document.getElementById('receivable-edit-id').value;
   if (!name) return;
   const id = editId || uid();
-  const row = { id, name, amount, currency, date, note };
+  const { data: { user } } = await sb.auth.getUser();
+  const row = { id, user_id: user.id, name, amount, currency, date, note };
   const err = await dbUpsert('receivables', row);
   if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const r = receivables.find(x => x.id === editId); if (r) Object.assign(r, row); }
@@ -1280,7 +1282,8 @@ async function saveBudgetItem() {
 
   const id = editId || uid();
   const startMonth = isMonthly && !editId ? monthKey(currentMonth) : (budgetItems.find(x => x.id === editId)?.startMonth || null);
-  const dbRow = { id, type: currentBudgetType, category, subcategory: subcategory || null,
+  const { data: { user } } = await sb.auth.getUser();
+  const dbRow = { id, user_id: user.id, type: currentBudgetType, category, subcategory: subcategory || null,
     amount, currency, date: date || null, note: note || null, tag: tag || null,
     recurring: isMonthly, recur_day: recurDay, start_month: startMonth };
   const memRow = { id, type: currentBudgetType, category, subcategory, amount, currency, date, note, tag, recurring: isMonthly, recurDay, startMonth };
