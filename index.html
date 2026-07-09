@@ -329,7 +329,7 @@ tailwind.config = {
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Баланс</label>
-        <input id="wallet-balance" type="number" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        <input id="wallet-balance" type="number" min="0" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Валюта</label>
@@ -360,7 +360,7 @@ tailwind.config = {
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Сумма</label>
-        <input id="receivable-amount" type="number" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        <input id="receivable-amount" type="number" min="0" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Валюта</label>
@@ -399,7 +399,7 @@ tailwind.config = {
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Сумма</label>
-        <input id="debt-amount" type="number" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        <input id="debt-amount" type="number" min="0" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Валюта</label>
@@ -450,7 +450,14 @@ tailwind.config = {
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Сумма</label>
-        <input id="budget-amount" type="number" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        <div class="flex gap-2">
+          <input id="budget-amount" type="number" min="0" step="0.01" placeholder="0.00" class="flex-1 border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+          <select id="budget-currency" class="border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+            <option value="RUB">₽</option>
+            <option value="USD">$</option>
+            <option value="EUR">€</option>
+          </select>
+        </div>
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Дата</label>
@@ -468,12 +475,8 @@ tailwind.config = {
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Тег</label>
         <div class="flex gap-2">
-          <select id="budget-tag" class="flex-1 border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
-            <option value="">— без тега —</option>
-            <option value="Москва">Москва</option>
-            <option value="Казань">Казань</option>
-          </select>
-          <input id="budget-tag-custom" type="text" placeholder="Или свой тег" class="flex-1 border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+          <select id="budget-tag" class="flex-1 border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none"></select>
+          <input id="budget-tag-custom" type="text" placeholder="Новый тег" class="flex-1 border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
         </div>
       </div>
       <div>
@@ -553,7 +556,8 @@ const DEFAULT_CATEGORIES = {
 };
 
 let wallets = [], receivables = [], debts = [], budgetItems = [], categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-let categoriesRowId = null; // id строки в таблице categories
+let categoriesRowId = null;
+let budgetTags = ['Москва', 'Казань'];
 
 // ==================== DB HELPERS ====================
 function showToast(msg, type = 'error') {
@@ -657,8 +661,8 @@ function renderWallets() {
       </div>
       <div class="flex items-center gap-3">
         <span class="text-lg font-bold ${parseFloat(w.balance) >= 0 ? 'text-gold-600' : 'text-danger-600'}">${fmt(w.balance, w.currency)}</span>
-        <button onclick="editWallet('${w.id}')" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
-        <button onclick="deleteWallet('${w.id}')" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
+        <button onclick="editWallet('${w.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
+        <button onclick="deleteWallet('${w.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
       </div>
     </div>
   `).join('');
@@ -729,8 +733,8 @@ function renderReceivables() {
       </div>
       <div class="flex items-center gap-3">
         <span class="text-lg font-bold text-success-600">${fmt(r.amount, r.currency)}</span>
-        <button onclick="editReceivable('${r.id}')" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
-        <button onclick="deleteReceivable('${r.id}')" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
+        <button onclick="editReceivable('${r.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
+        <button onclick="deleteReceivable('${r.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
       </div>
     </div>
   `).join('');
@@ -825,8 +829,8 @@ function renderDebts() {
             </div>
             <div class="flex items-center gap-3">
               <span class="font-bold text-danger-600">${fmt(d.amount, d.currency)}</span>
-              <button onclick="editDebt('${d.id}')" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
-              <button onclick="deleteDebt('${d.id}')" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
+              <button onclick="editDebt('${d.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
+              <button onclick="deleteDebt('${d.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
             </div>
           </div>
         `).join('')}
@@ -1049,9 +1053,9 @@ function renderBudget() {
           <div class="text-xs text-dark-700">${item.recurring ? 'каждое ' + item.recurDay + '-е число' : new Date(item.date).toLocaleDateString('ru-RU')}</div>
         </div>
         <div class="flex items-center gap-2">
-          <span class="font-semibold text-${clr}-600">${fmt(item.amount, 'RUB')}</span>
-          <button onclick="editBudgetItem('${item.id}')" class="text-dark-700 hover:text-gold-600 transition">✎</button>
-          <button onclick="deleteBudgetItem('${item.id}')" class="text-dark-700 hover:text-danger-600 transition">✕</button>
+          <span class="font-semibold text-${clr}-600">${fmt(item.amount, item.currency || 'RUB')}</span>
+          <button onclick="editBudgetItem('${item.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition">✎</button>
+          <button onclick="deleteBudgetItem('${item.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition">✕</button>
         </div>
       </div>`;
 
@@ -1064,7 +1068,7 @@ function renderBudget() {
         return `
           <div class="px-4 py-1.5 flex justify-between items-center bg-dark-400/30 border-b border-dark-400">
             <span class="text-xs font-medium text-dark-800">${esc(tagLabel)}</span>
-            <span class="text-xs font-bold text-${clr}-600">${fmt(tagTotal, 'RUB')}</span>
+            <span class="text-xs font-bold text-${clr}-600">${fmt(tagTotal, g.items[0]?.currency || 'RUB')}</span>
           </div>
           ${tagItems.map(renderItem).join('')}`;
       }).join('');
@@ -1078,7 +1082,7 @@ function renderBudget() {
           <span class="text-sm font-semibold text-${clr}-600">
             ${isIncome ? '↑' : '↓'} ${esc(g.category)}
           </span>
-          <span class="text-sm font-bold text-${clr}-600">${fmt(total, 'RUB')}</span>
+          <span class="text-sm font-bold text-${clr}-600">${fmt(total, g.items[0]?.currency || 'RUB')}</span>
         </div>
         ${bodyHtml}
       </div>
@@ -1109,6 +1113,13 @@ function populateCategorySelect() {
   updateSubcategories();
 }
 
+function populateTagSelect(selectedTag) {
+  const sel = document.getElementById('budget-tag');
+  sel.innerHTML = '<option value="">— без тега —</option>' +
+    budgetTags.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if (selectedTag && budgetTags.includes(selectedTag)) sel.value = selectedTag;
+}
+
 function updateSubcategories() {
   const catName = document.getElementById('budget-category').value;
   const cats = categories[currentBudgetType] || [];
@@ -1124,10 +1135,11 @@ function openBudgetModal() {
   currentBudgetType = 'expense';
   setBudgetType('expense');
   document.getElementById('budget-amount').value = '';
+  document.getElementById('budget-currency').value = 'RUB';
   document.getElementById('budget-date').value = currentMonth.toISOString().slice(0, 7) + '-01';
   document.getElementById('budget-day').value = '1';
   document.getElementById('budget-note').value = '';
-  document.getElementById('budget-tag').value = '';
+  populateTagSelect('');
   document.getElementById('budget-tag-custom').value = '';
   setDateMode('exact');
   document.getElementById('budget-modal-title').textContent = 'Новая запись бюджета';
@@ -1143,6 +1155,7 @@ function editBudgetItem(id) {
   updateSubcategories();
   document.getElementById('budget-subcategory').value = item.subcategory || '';
   document.getElementById('budget-amount').value = item.amount;
+  document.getElementById('budget-currency').value = item.currency || 'RUB';
   if (item.recurring) {
     setDateMode('monthly');
     document.getElementById('budget-day').value = item.recurDay;
@@ -1151,11 +1164,9 @@ function editBudgetItem(id) {
     document.getElementById('budget-date').value = item.date;
   }
   document.getElementById('budget-note').value = item.note || '';
-  const tagSel = document.getElementById('budget-tag');
+  populateTagSelect(item.tag);
   const tagCustom = document.getElementById('budget-tag-custom');
-  const presets = [...tagSel.options].map(o => o.value);
-  if (item.tag && presets.includes(item.tag)) { tagSel.value = item.tag; tagCustom.value = ''; }
-  else { tagSel.value = ''; tagCustom.value = item.tag || ''; }
+  tagCustom.value = (item.tag && !budgetTags.includes(item.tag)) ? item.tag : '';
   document.getElementById('budget-modal-title').textContent = 'Редактировать запись';
   document.getElementById('modal-budget').classList.remove('hidden');
 }
@@ -1164,6 +1175,7 @@ async function saveBudgetItem() {
   const category = document.getElementById('budget-category').value;
   const subcategory = document.getElementById('budget-subcategory').value;
   const amount = parseFloat(document.getElementById('budget-amount').value) || 0;
+  const currency = document.getElementById('budget-currency').value;
   const note = document.getElementById('budget-note').value.trim();
   const tagCustom = document.getElementById('budget-tag-custom').value.trim();
   const tag = tagCustom || document.getElementById('budget-tag').value;
@@ -1175,12 +1187,18 @@ async function saveBudgetItem() {
   if (!category || !amount) return;
   if (!isMonthly && !date) return;
 
+  // Если введён новый тег — добавить в список
+  if (tagCustom && !budgetTags.includes(tagCustom)) {
+    budgetTags.push(tagCustom);
+    localStorage.setItem('finora_tags', JSON.stringify(budgetTags));
+  }
+
   const id = editId || uid();
   const startMonth = isMonthly && !editId ? monthKey(currentMonth) : (budgetItems.find(x => x.id === editId)?.startMonth || null);
   const dbRow = { id, type: currentBudgetType, category, subcategory: subcategory || null,
-    amount, date: date || null, note: note || null, tag: tag || null,
+    amount, currency, date: date || null, note: note || null, tag: tag || null,
     recurring: isMonthly, recur_day: recurDay, start_month: startMonth };
-  const memRow = { id, type: currentBudgetType, category, subcategory, amount, date, note, tag, recurring: isMonthly, recurDay, startMonth };
+  const memRow = { id, type: currentBudgetType, category, subcategory, amount, currency, date, note, tag, recurring: isMonthly, recurDay, startMonth };
 
   const err = await dbUpsert('budget_items', dbRow);
   if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
@@ -1275,6 +1293,13 @@ async function deleteSubcategory(type, catIndex, subIndex) {
 
 // ==================== UTILS ====================
 function closeModal(name) { document.getElementById('modal-' + name).classList.add('hidden'); }
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  ['wallet','receivable','debt','budget','category'].forEach(name => {
+    document.getElementById('modal-' + name)?.classList.add('hidden');
+  });
+});
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 // ==================== CALCULATOR ====================
@@ -1440,11 +1465,14 @@ async function loadAllData() {
   debts = d.data || [];
   budgetItems = b.data?.map(x => ({
     id: x.id, type: x.type, category: x.category, subcategory: x.subcategory,
-    amount: x.amount, date: x.date, note: x.note, tag: x.tag,
+    amount: x.amount, currency: x.currency || 'RUB', date: x.date, note: x.note, tag: x.tag,
     recurring: x.recurring, recurDay: x.recur_day, startMonth: x.start_month
   })) || [];
   if (c.data) { categories = c.data.data; categoriesRowId = c.data.id; }
   else { categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); await saveCategories(); }
+  // Загружаем теги из localStorage (теги хранятся локально, не в Supabase)
+  const savedTags = localStorage.getItem('finora_tags');
+  if (savedTags) budgetTags = JSON.parse(savedTags);
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
