@@ -358,6 +358,10 @@ tailwind.config = {
           <option value="EUR">€ — Евро</option>
         </select>
       </div>
+      <label class="flex items-center gap-2 cursor-pointer select-none mt-1">
+        <input type="checkbox" id="wallet-exclude" class="w-4 h-4 accent-gold-600">
+        <span class="text-sm text-dark-800">Не учитывать в общем капитале</span>
+      </label>
     </div>
     <div class="flex gap-3 mt-5">
       <button onclick="closeModal('wallet')" class="flex-1 border border-dark-500 rounded-lg py-2.5 text-sm text-dark-800 hover:bg-dark-400 transition">Отмена</button>
@@ -397,6 +401,10 @@ tailwind.config = {
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Заметка</label>
         <input id="receivable-note" type="text" placeholder="Необязательно" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
+      <label class="flex items-center gap-2 cursor-pointer select-none mt-1">
+        <input type="checkbox" id="receivable-exclude" class="w-4 h-4 accent-gold-600">
+        <span class="text-sm text-dark-800">Не учитывать в общем капитале</span>
+      </label>
     </div>
     <div class="flex gap-3 mt-5">
       <button onclick="closeModal('receivable')" class="flex-1 border border-dark-500 rounded-lg py-2.5 text-sm text-dark-800 hover:bg-dark-400 transition">Отмена</button>
@@ -712,9 +720,9 @@ function renderWallets() {
   if (!wallets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   list.innerHTML = wallets.map(w => `
-    <div class="card rounded-xl p-4 flex justify-between items-center">
+    <div class="card rounded-xl p-4 flex justify-between items-center ${w.exclude_from_networth ? 'opacity-60' : ''}">
       <div>
-        <div class="font-semibold text-dark-900">${esc(w.name)}</div>
+        <div class="font-semibold text-dark-900">${esc(w.name)}${w.exclude_from_networth ? ' <span class="text-xs text-dark-700 font-normal">· не в капитале</span>' : ''}</div>
         <div class="text-xs text-dark-700 mt-0.5">${w.currency}</div>
       </div>
       <div class="flex items-center gap-3">
@@ -731,6 +739,7 @@ function openWalletModal(id) {
   document.getElementById('wallet-name').value = '';
   document.getElementById('wallet-balance').value = '';
   document.getElementById('wallet-currency').value = 'RUB';
+  document.getElementById('wallet-exclude').checked = false;
   document.getElementById('wallet-modal-title').textContent = 'Новый кошелёк';
   document.getElementById('modal-wallet').classList.remove('hidden');
 }
@@ -742,6 +751,7 @@ function editWallet(id) {
   document.getElementById('wallet-name').value = w.name;
   document.getElementById('wallet-balance').value = w.balance;
   document.getElementById('wallet-currency').value = w.currency;
+  document.getElementById('wallet-exclude').checked = !!w.exclude_from_networth;
   document.getElementById('wallet-modal-title').textContent = 'Редактировать кошелёк';
   document.getElementById('modal-wallet').classList.remove('hidden');
 }
@@ -750,16 +760,17 @@ async function saveWallet() {
   const name = document.getElementById('wallet-name').value.trim();
   const balance = parseFloat(document.getElementById('wallet-balance').value) || 0;
   const currency = document.getElementById('wallet-currency').value;
+  const exclude_from_networth = document.getElementById('wallet-exclude').checked;
   const editId = document.getElementById('wallet-edit-id').value;
   if (!name) return;
   const id = editId || uid();
   const { data: { user } } = await sb.auth.getUser();
-  const row = { id, user_id: user.id, name, balance, currency };
+  const row = { id, user_id: user.id, name, balance, currency, exclude_from_networth };
   const err = await dbUpsert('wallets', row);
   if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const w = wallets.find(x => x.id === editId); if (w) Object.assign(w, row); }
   else wallets.push(row);
-  closeModal('wallet'); renderWallets();
+  closeModal('wallet'); renderWallets(); renderNetWorth();
 }
 
 async function deleteWallet(id) {
@@ -786,9 +797,9 @@ function renderReceivables() {
     ).join('');
 
   list.innerHTML = receivables.map(r => `
-    <div class="card rounded-xl p-4 flex justify-between items-center">
+    <div class="card rounded-xl p-4 flex justify-between items-center ${r.exclude_from_networth ? 'opacity-60' : ''}">
       <div>
-        <div class="font-semibold text-dark-900">${esc(r.name)}</div>
+        <div class="font-semibold text-dark-900">${esc(r.name)}${r.exclude_from_networth ? ' <span class="text-xs text-dark-700 font-normal">· не в капитале</span>' : ''}</div>
         <div class="text-xs text-dark-700 mt-0.5">${r.date ? new Date(r.date).toLocaleDateString('ru-RU') : ''} ${r.note ? '· ' + esc(r.note) : ''}</div>
       </div>
       <div class="flex items-center gap-3">
@@ -807,6 +818,7 @@ function openReceivableModal() {
   document.getElementById('receivable-currency').value = 'RUB';
   document.getElementById('receivable-date').value = new Date().toISOString().slice(0, 10);
   document.getElementById('receivable-note').value = '';
+  document.getElementById('receivable-exclude').checked = false;
   document.getElementById('receivable-modal-title').textContent = 'Мне должны';
   document.getElementById('modal-receivable').classList.remove('hidden');
 }
@@ -820,6 +832,7 @@ function editReceivable(id) {
   document.getElementById('receivable-currency').value = r.currency;
   document.getElementById('receivable-date').value = r.date || '';
   document.getElementById('receivable-note').value = r.note || '';
+  document.getElementById('receivable-exclude').checked = !!r.exclude_from_networth;
   document.getElementById('receivable-modal-title').textContent = 'Редактировать';
   document.getElementById('modal-receivable').classList.remove('hidden');
 }
@@ -830,16 +843,17 @@ async function saveReceivable() {
   const currency = document.getElementById('receivable-currency').value;
   const date = document.getElementById('receivable-date').value || null;
   const note = document.getElementById('receivable-note').value.trim();
+  const exclude_from_networth = document.getElementById('receivable-exclude').checked;
   const editId = document.getElementById('receivable-edit-id').value;
   if (!name) return;
   const id = editId || uid();
   const { data: { user } } = await sb.auth.getUser();
-  const row = { id, user_id: user.id, name, amount, currency, date, note };
+  const row = { id, user_id: user.id, name, amount, currency, date, note, exclude_from_networth };
   const err = await dbUpsert('receivables', row);
   if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const r = receivables.find(x => x.id === editId); if (r) Object.assign(r, row); }
   else receivables.push(row);
-  closeModal('receivable'); renderReceivables();
+  closeModal('receivable'); renderReceivables(); renderNetWorth();
 }
 
 async function deleteReceivable(id) {
@@ -1548,8 +1562,8 @@ async function loadAllData() {
     sb.from('budget_items').select('*').order('created_at'),
     sb.from('categories').select('*').single(),
   ]);
-  wallets = w.data || [];
-  receivables = r.data || [];
+  wallets = w.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
+  receivables = r.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
   debts = d.data?.map(x => ({
     id: x.id, name: x.name, amount: x.amount, currency: x.currency || 'RUB',
     group: x.group, note: x.note, interest_rate: x.interest_rate || 0, min_payment: x.min_payment || 0
@@ -1593,7 +1607,8 @@ function toRub(amount, currency, rates) {
 
 async function computeNetWorth() {
   const { rates, fresh, date } = await fetchExchangeRates();
-  const assets = wallets.reduce((s, w) => s + toRub(w.balance, w.currency, rates), 0);
+  const assets = wallets.filter(w => !w.exclude_from_networth).reduce((s, w) => s + toRub(w.balance, w.currency, rates), 0)
+               + receivables.filter(r => !r.exclude_from_networth).reduce((s, r) => s + toRub(r.amount, r.currency, rates), 0);
   const liabilities = debts.reduce((s, d) => s + toRub(d.amount, d.currency, rates), 0);
   return { assets, liabilities, total: assets - liabilities, rates, fresh, rateDate: date };
 }
