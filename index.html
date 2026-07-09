@@ -1593,8 +1593,7 @@ function toRub(amount, currency, rates) {
 
 async function computeNetWorth() {
   const { rates, fresh, date } = await fetchExchangeRates();
-  const assets = wallets.reduce((s, w) => s + toRub(w.balance, w.currency, rates), 0)
-               + receivables.reduce((s, r) => s + toRub(r.amount, r.currency, rates), 0);
+  const assets = wallets.reduce((s, w) => s + toRub(w.balance, w.currency, rates), 0);
   const liabilities = debts.reduce((s, d) => s + toRub(d.amount, d.currency, rates), 0);
   return { assets, liabilities, total: assets - liabilities, rates, fresh, rateDate: date };
 }
