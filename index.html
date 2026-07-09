@@ -705,7 +705,8 @@ async function saveWallet() {
 
 async function deleteWallet(id) {
   if (!confirm('Удалить кошелёк?')) return;
-  await dbDelete('wallets', id);
+  const ok = await dbDelete('wallets', id);
+  if (!ok) return;
   wallets = wallets.filter(w => w.id !== id); renderWallets();
 }
 
@@ -783,7 +784,8 @@ async function saveReceivable() {
 
 async function deleteReceivable(id) {
   if (!confirm('Удалить запись?')) return;
-  await dbDelete('receivables', id);
+  const ok = await dbDelete('receivables', id);
+  if (!ok) return;
   receivables = receivables.filter(r => r.id !== id); renderReceivables();
 }
 
@@ -898,7 +900,8 @@ async function saveDebt() {
 
 async function deleteDebt(id) {
   if (!confirm('Удалить задолженность?')) return;
-  await dbDelete('debts', id);
+  const ok = await dbDelete('debts', id);
+  if (!ok) return;
   debts = debts.filter(d => d.id !== id); renderDebts();
 }
 
@@ -995,16 +998,33 @@ function renderBudget() {
     return b.date && b.date.startsWith(mk);
   });
 
-  const incomeTotal = items.filter(b => b.type === 'income').reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
-  const expenseTotal = items.filter(b => b.type === 'expense').reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  const sumByCurrency = (type) => {
+    const totals = {};
+    items.filter(b => b.type === type).forEach(b => {
+      const cur = b.currency || 'RUB';
+      totals[cur] = (totals[cur] || 0) + (parseFloat(b.amount) || 0);
+    });
+    return totals;
+  };
+  const incomeTotals = sumByCurrency('income');
+  const expenseTotals = sumByCurrency('expense');
+  const fmtTotals = (obj) => Object.entries(obj).map(([c, v]) => fmt(v, c)).join(' + ') || fmt(0, 'RUB');
 
-  document.getElementById('budget-income-total').textContent = fmt(incomeTotal, 'RUB');
-  document.getElementById('budget-expense-total').textContent = fmt(expenseTotal, 'RUB');
-  const bal = incomeTotal - expenseTotal;
+  document.getElementById('budget-income-total').textContent = fmtTotals(incomeTotals);
+  document.getElementById('budget-expense-total').textContent = fmtTotals(expenseTotals);
+
+  // Balance only meaningful if single currency
+  const currencies = [...new Set(items.map(b => b.currency || 'RUB'))];
   const balEl = document.getElementById('budget-balance');
-  balEl.textContent = fmt(Math.abs(bal), 'RUB');
-  balEl.className = 'text-lg font-bold ' + (bal >= 0 ? 'text-success-600' : 'text-danger-600');
-  if (bal < 0) balEl.textContent = '−' + balEl.textContent;
+  if (currencies.length === 1) {
+    const cur = currencies[0];
+    const bal = (incomeTotals[cur] || 0) - (expenseTotals[cur] || 0);
+    balEl.textContent = (bal < 0 ? '−' : '') + fmt(Math.abs(bal), cur);
+    balEl.className = 'text-lg font-bold ' + (bal >= 0 ? 'text-success-600' : 'text-danger-600');
+  } else {
+    balEl.textContent = '—';
+    balEl.className = 'text-lg font-bold text-dark-700';
+  }
 
   const list = document.getElementById('budget-list');
   const empty = document.getElementById('budget-empty');
@@ -1430,7 +1450,7 @@ function exportCSV() {
   debts.forEach(d => rows.push([q('Долг'), q(d.name), d.amount, q(d.currency ?? 'RUB'), q(d.group ?? ''), '', '', '', q(d.note ?? '')].join(',')));
   receivables.forEach(r => rows.push([q('Мне должны'), q(r.name), r.amount, q(r.currency), q(r.date ?? ''), '', '', '', ''].join(',')));
   budgetItems.forEach(b => rows.push([
-    q('Бюджет'), q(b.category), b.amount, q('RUB'),
+    q('Бюджет'), q(b.category), b.amount, q(b.currency || 'RUB'),
     q(b.recurring ? ('каждое ' + b.recurDay + ' число') : (b.date ?? '')),
     q(b.category), q(b.subcategory ?? ''), q(b.tag ?? ''), q(b.note ?? '')
   ].join(',')));
@@ -1486,8 +1506,9 @@ sb.auth.onAuthStateChange(async (event, session) => {
     await loadAllData();
     loading.classList.add('hidden');
     nav.style.display = '';
-    pages.forEach(p => p.style.display === 'block' || p.classList.contains('active') ? null : null);
-    renderWallets(); renderReceivables();
+    const activePage = document.querySelector('.page.active');
+    const activeId = (activePage?.id || 'page-wallets').replace('page-', '');
+    showPage(activeId);
   } else {
     loading.classList.add('hidden');
     nav.style.display = 'none';
