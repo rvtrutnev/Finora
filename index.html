@@ -954,7 +954,8 @@ async function saveDebt() {
   const editId = document.getElementById('debt-edit-id').value;
   if (!name) return;
   const id = editId || uid();
-  const row = { id, name, amount, currency, group: group || null, interest_rate, min_payment, note: note || null };
+  const { data: { user } } = await sb.auth.getUser();
+  const row = { id, user_id: user.id, name, amount, currency, group: group || null, interest_rate, min_payment, note: note || null };
   const err = await dbUpsert('debts', row);
   if (err) { showToast('Ошибка сохранения: ' + err.message); return; }
   if (editId) { const d = debts.find(x => x.id === editId); if (d) Object.assign(d, row); }
