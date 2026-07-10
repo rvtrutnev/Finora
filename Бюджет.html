@@ -1373,7 +1373,8 @@ function monthKey(date) {
 }
 
 function monthLabel(date) {
-  return date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  const locale = currentLang === 'de' ? 'de-DE' : currentLang === 'en' ? 'en-US' : 'ru-RU';
+  return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
 function changeMonth(delta) {
@@ -1420,7 +1421,8 @@ function renderCharts(items) {
   const months = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - i, 1);
-    months.push({ key: monthKey(d), label: d.toLocaleString('ru', { month: 'short' }) });
+    const locale = currentLang === 'de' ? 'de-DE' : currentLang === 'en' ? 'en-US' : 'ru-RU';
+    months.push({ key: monthKey(d), label: d.toLocaleString(locale, { month: 'short' }) });
   }
   const incomes = months.map(m => budgetItems.filter(b => b.type === 'income' && (b.recurring || (b.date && b.date.startsWith(m.key)))).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0));
   const expenses = months.map(m => budgetItems.filter(b => b.type === 'expense' && (b.recurring || (b.date && b.date.startsWith(m.key)))).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0));
@@ -1431,8 +1433,8 @@ function renderCharts(items) {
     data: {
       labels: months.map(m => m.label),
       datasets: [
-        { label: 'Доходы', data: incomes, backgroundColor: '#1a9a5c99', borderRadius: 4 },
-        { label: 'Расходы', data: expenses, backgroundColor: '#c0392b99', borderRadius: 4 }
+        { label: t('budget_income'), data: incomes, backgroundColor: '#1a9a5c99', borderRadius: 4 },
+        { label: t('budget_expense'), data: expenses, backgroundColor: '#c0392b99', borderRadius: 4 }
       ]
     },
     options: {
