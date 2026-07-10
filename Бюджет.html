@@ -1097,6 +1097,51 @@ function showPage(name) {
   if (name === 'budget') renderBudget();
 }
 
+// ==================== DRAG & DROP ====================
+let dragSrcId = null;
+
+function dragStart(e, listName) {
+  dragSrcId = e.currentTarget.dataset.id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragSrcId);
+  setTimeout(() => e.currentTarget.classList.add('opacity-40'), 0);
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('ring-1', 'ring-gold-500');
+}
+
+function dragEnd(e) {
+  e.currentTarget.classList.remove('opacity-40');
+  document.querySelectorAll('[draggable]').forEach(el => el.classList.remove('ring-1', 'ring-gold-500'));
+}
+
+function dragDrop(e, listName) {
+  e.preventDefault();
+  const targetId = e.currentTarget.dataset.id;
+  if (!dragSrcId || dragSrcId === targetId) return;
+
+  const arr = listName === 'wallets' ? wallets : debts;
+  const fromIdx = arr.findIndex(x => x.id === dragSrcId);
+  const toIdx   = arr.findIndex(x => x.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  arr.splice(toIdx, 0, arr.splice(fromIdx, 1)[0]);
+  arr.forEach((x, i) => { x.sort_order = i; });
+
+  if (listName === 'wallets') { renderWallets(); saveSortOrder('wallets', arr); }
+  else                        { renderDebts();   saveSortOrder('debts',   arr); }
+}
+
+async function saveSortOrder(table, arr) {
+  const { data: { user } } = await sb.auth.getUser();
+  await Promise.all(arr.map((x, i) =>
+    sb.from(table).update({ sort_order: i }).eq('id', x.id).eq('user_id', user.id)
+  ));
+}
+
 // ==================== WALLETS ====================
 function renderWallets() {
   const list = document.getElementById('wallets-list');
@@ -1104,10 +1149,13 @@ function renderWallets() {
   if (!wallets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   list.innerHTML = wallets.map(w => `
-    <div class="card rounded-xl p-4 flex justify-between items-center ${w.exclude_from_networth ? 'opacity-60' : ''}">
-      <div>
-        <div class="font-semibold text-dark-900">${esc(w.name)}${w.exclude_from_networth ? ` <span class="text-xs text-dark-700 font-normal">${t('not_in_capital')}</span>` : ''}</div>
-        <div class="text-xs text-dark-700 mt-0.5">${w.currency}</div>
+    <div class="card rounded-xl p-4 flex justify-between items-center ${w.exclude_from_networth ? 'opacity-60' : ''}" draggable="true" data-id="${w.id}" ondragstart="dragStart(event,'wallets')" ondragover="dragOver(event)" ondrop="dragDrop(event,'wallets')" ondragend="dragEnd(event)">
+      <div class="flex items-center gap-3">
+        <span class="drag-handle text-dark-600 cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</span>
+        <div>
+          <div class="font-semibold text-dark-900">${esc(w.name)}${w.exclude_from_networth ? ` <span class="text-xs text-dark-700 font-normal">${t('not_in_capital')}</span>` : ''}</div>
+          <div class="text-xs text-dark-700 mt-0.5">${w.currency}</div>
+        </div>
       </div>
       <div class="flex items-center gap-3">
         <span class="text-lg font-bold ${parseFloat(w.balance) >= 0 ? 'text-gold-600' : 'text-danger-600'}">${fmt(w.balance, w.currency)}</span>
@@ -1282,10 +1330,13 @@ function renderDebts() {
           ${!mixed ? `<span class="text-sm font-bold text-danger-600">${fmt(total, currency)}</span>` : ''}
         </div>
         ${items.map(d => `
-          <div class="px-4 py-3 flex justify-between items-center border-b border-dark-400 last:border-0">
-            <div>
-              <div class="font-medium text-dark-900">${esc(d.name)}</div>
-              ${d.note ? `<div class="text-xs text-dark-700">${esc(d.note)}</div>` : ''}
+          <div class="px-4 py-3 flex justify-between items-center border-b border-dark-400 last:border-0" draggable="true" data-id="${d.id}" ondragstart="dragStart(event,'debts')" ondragover="dragOver(event)" ondrop="dragDrop(event,'debts')" ondragend="dragEnd(event)">
+            <div class="flex items-center gap-3">
+              <span class="drag-handle text-dark-600 cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</span>
+              <div>
+                <div class="font-medium text-dark-900">${esc(d.name)}</div>
+                ${d.note ? `<div class="text-xs text-dark-700">${esc(d.note)}</div>` : ''}
+              </div>
             </div>
             <div class="flex items-center gap-3">
               <span class="font-bold text-danger-600">${fmt(d.amount, d.currency)}</span>
@@ -1942,9 +1993,9 @@ if ('serviceWorker' in navigator) {
 // ==================== INIT ====================
 async function loadAllData() {
   const [w, r, d, b, c] = await Promise.all([
-    sb.from('wallets').select('*').order('created_at'),
+    sb.from('wallets').select('*').order('sort_order').order('created_at'),
     sb.from('receivables').select('*').order('created_at'),
-    sb.from('debts').select('*').order('created_at'),
+    sb.from('debts').select('*').order('sort_order').order('created_at'),
     sb.from('budget_items').select('*').order('created_at'),
     sb.from('categories').select('*').single(),
   ]);
