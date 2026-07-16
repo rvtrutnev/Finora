@@ -2093,8 +2093,12 @@ function renderDailySummary() {
   const days = Math.round((pd - today) / 86400000);
   if (days <= 0) { amountEl.textContent = '—'; metaEl.textContent = ''; return; }
   amountEl.textContent = fmt(sum / days, 'RUB');
-  const dateStr = pd.toLocaleDateString('ru-RU', {day:'numeric', month:'short'}).replace('.', '');
-  metaEl.textContent = `${days} дн. · ${dateStr}`;
+  const dateStr = pd.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+  const dayWord = days % 100 >= 11 && days % 100 <= 19 ? 'дней'
+    : days % 10 === 1 ? 'день'
+    : days % 10 >= 2 && days % 10 <= 4 ? 'дня'
+    : 'дней';
+  metaEl.textContent = `осталось ${days} ${dayWord} до ${dateStr}`;
 }
 
 function initDailyCalc(ns = '') {
