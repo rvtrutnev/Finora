@@ -237,35 +237,12 @@ tailwind.config = {
 
     </div>
 
-    <!-- Right: daily budget widget -->
-    <div class="w-64 shrink-0 sticky top-20">
-      <div class="card rounded-xl p-5">
-        <div class="font-semibold text-gold-400 mb-4 uppercase tracking-wider text-xs" data-i18n="daily_title">Сколько тратить в день</div>
-        <div class="space-y-3 mb-4">
-          <div>
-            <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_amount">Сумма</label>
-            <input id="daily-amount-w" type="number" min="0" step="0.01" placeholder="0"
-              oninput="calcDaily('-w')"
-              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_until">До какой даты</label>
-            <input id="daily-date-w" type="date"
-              oninput="calcDaily('-w')"
-              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
-          </div>
-        </div>
-        <div id="daily-result-w" class="hidden">
-          <div class="flex justify-between items-center py-3 border-t border-dark-400">
-            <span class="text-xs text-dark-800" data-i18n="daily_days_left">Осталось дней</span>
-            <span id="daily-days-w" class="font-bold text-dark-900">—</span>
-          </div>
-          <div class="pt-3 border-t border-dark-400 text-center">
-            <div class="text-xs text-dark-700 mb-1" data-i18n="daily_per_day">Можно тратить в день</div>
-            <div id="daily-per-day-w" class="text-3xl font-bold text-gold-600">—</div>
-          </div>
-        </div>
-        <div id="daily-warn-w" class="hidden text-xs text-danger-600 mt-2" data-i18n="daily_warn">Дата уже прошла</div>
+    <!-- Right: daily summary -->
+    <div class="w-52 shrink-0 sticky top-20">
+      <div class="card rounded-xl p-5 text-center">
+        <div class="section-label mb-3" data-i18n="daily_title">Сколько тратить в день</div>
+        <div id="daily-summary-amount" class="text-3xl font-bold text-gold-600">—</div>
+        <div id="daily-summary-meta" class="section-label mt-2"></div>
       </div>
     </div>
 
@@ -1233,7 +1210,7 @@ function showPage(name) {
   const page = document.getElementById('page-' + name);
   page.classList.add('active');
   document.getElementById('nav-' + name).classList.add('tab-active');
-  if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); initDailyCalc('-w'); }
+  if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); renderDailySummary(); }
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
   if (name === 'calc') initDailyCalc();
@@ -2079,6 +2056,20 @@ function nextPayday() {
     if (adjusted >= todayMs) return new Date(adjusted);
   }
   return new Date(toFriday(candidates[2]));
+}
+
+function renderDailySummary() {
+  const amountEl = document.getElementById('daily-summary-amount');
+  const metaEl = document.getElementById('daily-summary-meta');
+  const sum = wallets.filter(w => w.use_for_daily && w.currency === 'RUB')
+    .reduce((s, w) => s + (parseFloat(w.balance) || 0), 0);
+  if (!sum) { amountEl.textContent = '—'; metaEl.textContent = ''; return; }
+  const pd = nextPayday();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((pd - today) / 86400000);
+  if (days <= 0) { amountEl.textContent = '—'; metaEl.textContent = ''; return; }
+  amountEl.textContent = fmt(sum / days, 'RUB');
+  metaEl.textContent = `${days} ${t('daily_days_left').toLowerCase()} · ${pd.toLocaleDateString('ru-RU', {day:'numeric', month:'short'})}`;
 }
 
 function initDailyCalc(ns = '') {
