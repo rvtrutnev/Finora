@@ -37,7 +37,8 @@ tailwind.config = {
   .page.active { display: block; }
   .modal-overlay { background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
   body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -0.01em; }
-  .tab-active { border-bottom: 2px solid #d4a849; color: #e8c36a; font-weight: 600; }
+  .tab-active { border-bottom: 2px solid #d4a849; color: #e8c36a; font-weight: 600; background: rgba(212,168,73,0.07); border-radius: 0; }
+  .nav-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   input[type="number"] { -moz-appearance: textfield; }
   input, select { background: #1e1e24; border-color: #2a2a32; color: #e0e0e6; }
@@ -162,10 +163,18 @@ tailwind.config = {
 <nav class="bg-dark-200 border-b border-dark-400 sticky top-0 z-40">
   <div class="max-w-4xl mx-auto flex items-center">
     <img src="logo.png" alt="Finora" class="h-7 w-7 ml-3 rounded-lg flex-shrink-0">
-    <button onclick="showPage('wallets')" id="nav-wallets" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tab-active tracking-wide uppercase" data-i18n="nav_wallets">Кошельки</button>
-    <button onclick="showPage('debts')" id="nav-debts" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase" data-i18n="nav_debts">Долги</button>
-    <button onclick="showPage('budget')" id="nav-budget" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase" data-i18n="nav_budget">Бюджет</button>
-    <button onclick="showPage('calc')" id="nav-calc" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase" data-i18n="nav_calc">Калькулятор</button>
+    <button onclick="showPage('wallets')" id="nav-wallets" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tab-active">
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h2"/><path d="M2 10h20"/></svg><span class="text-xs font-medium" data-i18n="nav_wallets">Кошельки</span></div>
+    </button>
+    <button onclick="showPage('debts')" id="nav-debts" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg><span class="text-xs font-medium" data-i18n="nav_debts">Долги</span></div>
+    </button>
+    <button onclick="showPage('budget')" id="nav-budget" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg><span class="text-xs font-medium" data-i18n="nav_budget">Бюджет</span></div>
+    </button>
+    <button onclick="showPage('calc')" id="nav-calc" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg><span class="text-xs font-medium" data-i18n="nav_calc">Калькулятор</span></div>
+    </button>
     <button onclick="exportCSV()" title="CSV" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
     <div class="relative">
       <button onclick="toggleLangMenu()" title="Language" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
