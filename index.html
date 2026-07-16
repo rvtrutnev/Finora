@@ -192,43 +192,83 @@ tailwind.config = {
 
 <!-- ==================== WALLETS PAGE ==================== -->
 <div id="page-wallets" class="page active max-w-4xl mx-auto p-6">
+  <div class="flex gap-6 items-start">
 
-  <!-- Net Worth Card -->
-  <div class="card rounded-xl p-5 mb-5 gold-border border">
-    <div class="text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="nw_title">Общий капитал</div>
-    <div id="networth-total" class="text-2xl font-bold gold-text">—</div>
-    <div class="flex gap-4 mt-1 text-xs text-dark-700">
-      <span><span data-i18n="nw_assets">Активы</span>: <span id="networth-assets" class="text-success-600 font-medium">—</span></span>
-      <span><span data-i18n="nw_liabilities">Обязательства</span>: <span id="networth-liabilities" class="text-danger-600 font-medium">—</span></span>
+    <!-- Main content -->
+    <div class="flex-1 min-w-0">
+
+      <!-- Net Worth Card -->
+      <div class="card rounded-xl p-5 mb-5 gold-border border">
+        <div class="text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="nw_title">Общий капитал</div>
+        <div id="networth-total" class="text-2xl font-bold gold-text">—</div>
+        <div class="flex gap-4 mt-1 text-xs text-dark-700">
+          <span><span data-i18n="nw_assets">Активы</span>: <span id="networth-assets" class="text-success-600 font-medium">—</span></span>
+          <span><span data-i18n="nw_liabilities">Обязательства</span>: <span id="networth-liabilities" class="text-danger-600 font-medium">—</span></span>
+        </div>
+        <div id="networth-delta" class="text-xs text-dark-700 mt-1"></div>
+        <div class="relative mt-3" style="height:60px">
+          <canvas id="networth-chart"></canvas>
+        </div>
+        <div id="networth-rate-note" class="text-xs text-dark-600 mt-2 hidden"></div>
+      </div>
+
+      <div class="flex justify-between items-center mb-5">
+        <h1 class="text-xl font-semibold gold-text tracking-wide" data-i18n="wallets_title">Кошельки</h1>
+        <button onclick="openWalletModal()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="add">+ Добавить</button>
+      </div>
+      <div id="wallets-list" class="space-y-4"></div>
+      <div id="wallets-empty" class="hidden text-center py-16 text-dark-700">
+        <div class="text-4xl mb-3 opacity-40">💳</div>
+        <p class="text-dark-800" data-i18n="wallets_empty">Нет кошельков</p>
+        <p class="text-sm mt-1 text-dark-700" data-i18n="wallets_empty_hint">Добавьте первый кошелёк</p>
+      </div>
+
+      <!-- Receivables -->
+      <div class="flex justify-between items-center mb-5 mt-10 pt-8 border-t border-dark-400">
+        <h2 class="text-xl font-semibold gold-text tracking-wide" data-i18n="recv_title">Мне должны</h2>
+        <button onclick="openReceivableModal()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="add">+ Добавить</button>
+      </div>
+      <div id="receivables-total" class="hidden card rounded-xl p-4 mb-4"></div>
+      <div id="receivables-list" class="space-y-4"></div>
+      <div id="receivables-empty" class="hidden text-center py-16 text-dark-700">
+        <div class="text-4xl mb-3 opacity-40">🤝</div>
+        <p class="text-dark-800" data-i18n="recv_empty">Нет записей</p>
+      </div>
+
     </div>
-    <div id="networth-delta" class="text-xs text-dark-700 mt-1"></div>
-    <div class="relative mt-3" style="height:60px">
-      <canvas id="networth-chart"></canvas>
+
+    <!-- Right: daily budget widget -->
+    <div class="w-64 shrink-0 sticky top-20">
+      <div class="card rounded-xl p-5">
+        <div class="font-semibold text-gold-400 mb-4 uppercase tracking-wider text-xs" data-i18n="daily_title">Сколько тратить в день</div>
+        <div class="space-y-3 mb-4">
+          <div>
+            <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_amount">Сумма</label>
+            <input id="daily-amount-w" type="number" min="0" step="0.01" placeholder="0"
+              oninput="calcDaily('-w')"
+              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_until">До какой даты</label>
+            <input id="daily-date-w" type="date"
+              oninput="calcDaily('-w')"
+              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+          </div>
+        </div>
+        <div id="daily-result-w" class="hidden">
+          <div class="flex justify-between items-center py-3 border-t border-dark-400">
+            <span class="text-xs text-dark-800" data-i18n="daily_days_left">Осталось дней</span>
+            <span id="daily-days-w" class="font-bold text-dark-900">—</span>
+          </div>
+          <div class="pt-3 border-t border-dark-400 text-center">
+            <div class="text-xs text-dark-700 mb-1" data-i18n="daily_per_day">Можно тратить в день</div>
+            <div id="daily-per-day-w" class="text-3xl font-bold text-gold-600">—</div>
+          </div>
+        </div>
+        <div id="daily-warn-w" class="hidden text-xs text-danger-600 mt-2" data-i18n="daily_warn">Дата уже прошла</div>
+      </div>
     </div>
-    <div id="networth-rate-note" class="text-xs text-dark-600 mt-2 hidden"></div>
-  </div>
 
-  <div class="flex justify-between items-center mb-5">
-    <h1 class="text-xl font-semibold gold-text tracking-wide" data-i18n="wallets_title">Кошельки</h1>
-    <button onclick="openWalletModal()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="add">+ Добавить</button>
-  </div>
-  <div id="wallets-list" class="space-y-4"></div>
-  <div id="wallets-empty" class="hidden text-center py-16 text-dark-700">
-    <div class="text-4xl mb-3 opacity-40">💳</div>
-    <p class="text-dark-800" data-i18n="wallets_empty">Нет кошельков</p>
-    <p class="text-sm mt-1 text-dark-700" data-i18n="wallets_empty_hint">Добавьте первый кошелёк</p>
-  </div>
-
-  <!-- Receivables -->
-  <div class="flex justify-between items-center mb-5 mt-10 pt-8 border-t border-dark-400">
-    <h2 class="text-xl font-semibold gold-text tracking-wide" data-i18n="recv_title">Мне должны</h2>
-    <button onclick="openReceivableModal()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="add">+ Добавить</button>
-  </div>
-  <div id="receivables-total" class="hidden card rounded-xl p-4 mb-4"></div>
-  <div id="receivables-list" class="space-y-4"></div>
-  <div id="receivables-empty" class="hidden text-center py-16 text-dark-700">
-    <div class="text-4xl mb-3 opacity-40">🤝</div>
-    <p class="text-dark-800" data-i18n="recv_empty">Нет записей</p>
   </div>
 </div>
 
@@ -1193,7 +1233,7 @@ function showPage(name) {
   const page = document.getElementById('page-' + name);
   page.classList.add('active');
   document.getElementById('nav-' + name).classList.add('tab-active');
-  if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); }
+  if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); initDailyCalc('-w'); }
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
   if (name === 'calc') initDailyCalc();
@@ -2041,22 +2081,22 @@ function nextPayday() {
   return new Date(toFriday(candidates[2]));
 }
 
-function initDailyCalc() {
+function initDailyCalc(ns = '') {
   const sum = wallets.filter(w => w.use_for_daily && w.currency === 'RUB')
     .reduce((s, w) => s + (parseFloat(w.balance) || 0), 0);
-  if (sum > 0) document.getElementById('daily-amount').value = Math.round(sum);
+  if (sum > 0) document.getElementById('daily-amount' + ns).value = Math.round(sum);
 
   const pd = nextPayday();
   const iso = `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,'0')}-${String(pd.getDate()).padStart(2,'0')}`;
-  document.getElementById('daily-date').value = iso;
-  calcDaily();
+  document.getElementById('daily-date' + ns).value = iso;
+  calcDaily(ns);
 }
 
-function calcDaily() {
-  const amount = parseFloat(document.getElementById('daily-amount').value) || 0;
-  const dateVal = document.getElementById('daily-date').value;
-  const result = document.getElementById('daily-result');
-  const warn = document.getElementById('daily-warn');
+function calcDaily(ns = '') {
+  const amount = parseFloat(document.getElementById('daily-amount' + ns).value) || 0;
+  const dateVal = document.getElementById('daily-date' + ns).value;
+  const result = document.getElementById('daily-result' + ns);
+  const warn = document.getElementById('daily-warn' + ns);
 
   result.classList.add('hidden');
   warn.classList.add('hidden');
@@ -2069,8 +2109,8 @@ function calcDaily() {
 
   if (days <= 0) { warn.classList.remove('hidden'); return; }
 
-  document.getElementById('daily-days').textContent = days;
-  document.getElementById('daily-per-day').textContent = fmt(amount / days, 'RUB');
+  document.getElementById('daily-days' + ns).textContent = days;
+  document.getElementById('daily-per-day' + ns).textContent = fmt(amount / days, 'RUB');
   result.classList.remove('hidden');
 }
 
