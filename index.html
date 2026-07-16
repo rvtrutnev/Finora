@@ -237,15 +237,15 @@ tailwind.config = {
 
     </div>
 
-    <!-- Right: summary widgets — same height as net worth card via JS -->
-    <div id="summary-widgets" class="w-44 shrink-0 sticky top-20 flex flex-col gap-3">
-      <div class="card rounded-xl p-3 text-center flex-1 flex flex-col justify-center">
-        <div class="section-label mb-2 whitespace-nowrap" data-i18n="daily_title">Сколько тратить в день</div>
-        <div id="daily-summary-amount" class="text-xl font-bold text-gold-600 whitespace-nowrap">—</div>
-        <div id="daily-summary-meta" class="section-label mt-1 leading-tight"></div>
+    <!-- Right: summary widgets -->
+    <div id="summary-widgets" class="w-48 shrink-0 sticky top-20 flex flex-col gap-3">
+      <div class="card rounded-xl p-4 text-center flex-1 flex flex-col justify-center">
+        <div class="section-label mb-2" data-i18n="daily_title">Сколько тратить в день</div>
+        <div id="daily-summary-amount" class="text-xl font-bold text-gold-600">—</div>
+        <div id="daily-summary-meta" class="section-label mt-1"></div>
       </div>
-      <div class="card rounded-xl p-3 text-center flex-1 flex flex-col justify-center">
-        <div class="section-label mb-2 whitespace-nowrap" data-i18n="debts_title">Задолженности</div>
+      <div class="card rounded-xl p-4 text-center flex-1 flex flex-col justify-center">
+        <div class="section-label mb-2" data-i18n="debts_title">Задолженности</div>
         <div id="debt-summary-wrap" class="flex flex-col items-center gap-1">
           <div class="text-dark-700 text-sm">—</div>
         </div>
@@ -2093,8 +2093,8 @@ function renderDailySummary() {
   const days = Math.round((pd - today) / 86400000);
   if (days <= 0) { amountEl.textContent = '—'; metaEl.textContent = ''; return; }
   amountEl.textContent = fmt(sum / days, 'RUB');
-  const dateStr = pd.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
-  metaEl.textContent = `${t('daily_days_left')} ${days} ${t('daily_days_until')} ${dateStr}`;
+  const dateStr = pd.toLocaleDateString('ru-RU', {day:'numeric', month:'short'}).replace('.', '');
+  metaEl.textContent = `${days} дн. · ${dateStr}`;
 }
 
 function initDailyCalc(ns = '') {
