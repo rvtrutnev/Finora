@@ -785,7 +785,7 @@ const TRANSLATIONS = {
     err_save:'Ошибка сохранения: ', err_del:'Не удалось удалить: ',
     csv_wallet:'Кошелёк', csv_debt:'Долг', csv_recv:'Мне должны', csv_budget:'Бюджет',
     daily_title:'Сколько тратить в день', daily_amount:'Сумма', daily_until:'До какой даты',
-    daily_days_left:'Осталось дней', daily_per_day:'Можно тратить в день', daily_warn:'Дата уже прошла',
+    daily_days_left:'Осталось', daily_per_day:'Можно тратить в день', daily_warn:'Дата уже прошла', daily_days_until:'дней до',
     csv_headers:'Раздел,Название,Сумма,Валюта,Дата/Тип,Категория,Подкатегория,Тег,Примечание',
   },
   en: {
@@ -857,7 +857,7 @@ const TRANSLATIONS = {
     err_save:'Save error: ', err_del:'Could not delete: ',
     csv_wallet:'Wallet', csv_debt:'Debt', csv_recv:'Receivable', csv_budget:'Budget',
     daily_title:'Daily spending limit', daily_amount:'Amount', daily_until:'Until date',
-    daily_days_left:'Days remaining', daily_per_day:'You can spend per day', daily_warn:'Date has already passed',
+    daily_days_left:'Left', daily_per_day:'You can spend per day', daily_warn:'Date has already passed', daily_days_until:'days until',
     csv_headers:'Section,Name,Amount,Currency,Date/Type,Category,Subcategory,Tag,Note',
   },
   de: {
@@ -929,7 +929,7 @@ const TRANSLATIONS = {
     err_save:'Speicherfehler: ', err_del:'Löschen fehlgeschlagen: ',
     csv_wallet:'Konto', csv_debt:'Schuld', csv_recv:'Forderung', csv_budget:'Budget',
     daily_title:'Tagesbudget berechnen', daily_amount:'Betrag', daily_until:'Bis zum Datum',
-    daily_days_left:'Verbleibende Tage', daily_per_day:'Pro Tag ausgeben', daily_warn:'Datum liegt in der Vergangenheit',
+    daily_days_left:'Noch', daily_per_day:'Pro Tag ausgeben', daily_warn:'Datum liegt in der Vergangenheit', daily_days_until:'Tage bis zum',
     csv_headers:'Abschnitt,Name,Betrag,Währung,Datum/Typ,Kategorie,Unterkategorie,Tag,Notiz',
   },
   fr: {
@@ -992,7 +992,7 @@ const TRANSLATIONS = {
     calc_info3:"70/20/10 — épargne minimale, plus pour les dépenses courantes",
     csv_wallet:'Compte', csv_debt:'Dette', csv_recv:'Créance', csv_budget:'Budget',
     daily_title:'Budget journalier', daily_amount:'Montant', daily_until:"Jusqu'à la date",
-    daily_days_left:'Jours restants', daily_per_day:'À dépenser par jour', daily_warn:'La date est déjà passée',
+    daily_days_left:'Reste', daily_per_day:'À dépenser par jour', daily_warn:'La date est déjà passée', daily_days_until:'jours jusqu\'au',
     csv_headers:'Section,Nom,Montant,Devise,Date/Type,Catégorie,Sous-catégorie,Étiquette,Note',
   },
   es: {
@@ -1055,7 +1055,7 @@ const TRANSLATIONS = {
     calc_info3:'70/20/10 — mínimo en ahorros, más para gastos actuales',
     csv_wallet:'Cuenta', csv_debt:'Deuda', csv_recv:'Por cobrar', csv_budget:'Presupuesto',
     daily_title:'Presupuesto diario', daily_amount:'Importe', daily_until:'Hasta la fecha',
-    daily_days_left:'Días restantes', daily_per_day:'Puedes gastar al día', daily_warn:'La fecha ya pasó',
+    daily_days_left:'Quedan', daily_per_day:'Puedes gastar al día', daily_warn:'La fecha ya pasó', daily_days_until:'días hasta el',
     csv_headers:'Sección,Nombre,Importe,Moneda,Fecha/Tipo,Categoría,Subcategoría,Etiqueta,Nota',
   },
 };
@@ -2069,7 +2069,8 @@ function renderDailySummary() {
   const days = Math.round((pd - today) / 86400000);
   if (days <= 0) { amountEl.textContent = '—'; metaEl.textContent = ''; return; }
   amountEl.textContent = fmt(sum / days, 'RUB');
-  metaEl.textContent = `${days} ${t('daily_days_left').toLowerCase()} · ${pd.toLocaleDateString('ru-RU', {day:'numeric', month:'short'})}`;
+  const dateStr = pd.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+  metaEl.textContent = `${t('daily_days_left')} ${days} ${t('daily_days_until')} ${dateStr}`;
 }
 
 function initDailyCalc(ns = '') {
