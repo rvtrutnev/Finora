@@ -133,7 +133,7 @@ tailwind.config = {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
-        <p id="auth-pass-hint" class="hidden text-xs text-dark-700 mt-1">Минимум 6 символов</p>
+        <p id="auth-pass-hint" class="hidden text-xs text-dark-700 mt-1" data-i18n="auth_pass_hint">Минимум 8 символов</p>
       </div>
       <!-- Ссылка "Забыли пароль?" — только в режиме входа -->
       <div id="auth-forgot-wrap" class="text-right">
@@ -693,7 +693,7 @@ const TRANSLATIONS = {
     auth_forgot:'Забыли пароль?', auth_confirmed:'Уже подтвердил — войти',
     auth_check_email:'Проверьте почту', auth_confirm_sent:'Мы отправили письмо с подтверждением на',
     auth_reset_sent:'Письмо для сброса пароля отправлено на ',
-    auth_fill_fields:'Заполните все поля', auth_pass_short:'Пароль должен быть не менее 8 символов',
+    auth_fill_fields:'Заполните все поля', auth_pass_short:'Пароль должен быть не менее 8 символов', auth_pass_hint:'Минимум 8 символов',
     auth_enter_email:'Введите email для восстановления пароля',
     auth_invalid:'Неверный email или пароль', auth_already_reg:'Не удалось зарегистрироваться — проверьте данные или попробуйте войти',
     auth_confirm_email:'Проверьте почту — нужно подтвердить email',
@@ -765,7 +765,7 @@ const TRANSLATIONS = {
     auth_forgot:'Forgot password?', auth_confirmed:'Already confirmed — sign in',
     auth_check_email:'Check your email', auth_confirm_sent:'We sent a confirmation email to',
     auth_reset_sent:'Password reset link sent to ',
-    auth_fill_fields:'Please fill in all fields', auth_pass_short:'Password must be at least 8 characters',
+    auth_fill_fields:'Please fill in all fields', auth_pass_short:'Password must be at least 8 characters', auth_pass_hint:'Minimum 8 characters',
     auth_enter_email:'Enter your email to reset password',
     auth_invalid:'Invalid email or password', auth_already_reg:'Could not register — check your details or try signing in',
     auth_confirm_email:'Check your email — confirmation required',
@@ -837,7 +837,7 @@ const TRANSLATIONS = {
     auth_forgot:'Passwort vergessen?', auth_confirmed:'Bereits bestätigt — anmelden',
     auth_check_email:'E-Mail überprüfen', auth_confirm_sent:'Wir haben eine Bestätigungs-E-Mail gesendet an',
     auth_reset_sent:'Passwort-Reset-Link gesendet an ',
-    auth_fill_fields:'Bitte alle Felder ausfüllen', auth_pass_short:'Passwort muss mindestens 8 Zeichen lang sein',
+    auth_fill_fields:'Bitte alle Felder ausfüllen', auth_pass_short:'Passwort muss mindestens 8 Zeichen lang sein', auth_pass_hint:'Mindestens 8 Zeichen',
     auth_enter_email:'E-Mail für Passwort-Reset eingeben',
     auth_invalid:'Ungültige E-Mail oder Passwort', auth_already_reg:'Registrierung fehlgeschlagen — Daten prüfen oder anmelden',
     auth_confirm_email:'E-Mail prüfen — Bestätigung erforderlich',
@@ -909,7 +909,7 @@ const TRANSLATIONS = {
     auth_forgot:'Mot de passe oublié ?', auth_confirmed:'Déjà confirmé — se connecter',
     auth_check_email:'Vérifiez votre e-mail', auth_confirm_sent:'Nous avons envoyé un e-mail de confirmation à',
     auth_reset_sent:'Lien de réinitialisation envoyé à ',
-    auth_fill_fields:'Veuillez remplir tous les champs', auth_pass_short:'Le mot de passe doit comporter au moins 8 caractères',
+    auth_fill_fields:'Veuillez remplir tous les champs', auth_pass_short:'Le mot de passe doit comporter au moins 8 caractères', auth_pass_hint:'Minimum 8 caractères',
     auth_enter_email:'Entrez votre e-mail pour réinitialiser le mot de passe',
     auth_invalid:'E-mail ou mot de passe incorrect', auth_already_reg:'Cet e-mail est déjà enregistré',
     auth_confirm_email:"Vérifiez votre e-mail — confirmation requise",
@@ -972,7 +972,7 @@ const TRANSLATIONS = {
     auth_forgot:'¿Olvidaste tu contraseña?', auth_confirmed:'Ya confirmado — iniciar sesión',
     auth_check_email:'Revisa tu correo', auth_confirm_sent:'Enviamos un correo de confirmación a',
     auth_reset_sent:'Enlace de restablecimiento enviado a ',
-    auth_fill_fields:'Por favor completa todos los campos', auth_pass_short:'La contraseña debe tener al menos 8 caracteres',
+    auth_fill_fields:'Por favor completa todos los campos', auth_pass_short:'La contraseña debe tener al menos 8 caracteres', auth_pass_hint:'Mínimo 8 caracteres',
     auth_enter_email:'Ingresa tu correo para restablecer la contraseña',
     auth_invalid:'Correo o contraseña incorrectos', auth_already_reg:'Este correo ya está registrado',
     auth_confirm_email:'Revisa tu correo — se requiere confirmación',
