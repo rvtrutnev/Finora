@@ -2013,29 +2013,31 @@ function calcDistribution() {
 }
 
 function nextPayday() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const y = today.getFullYear();
-  const m = today.getMonth();
+  const todayMs = new Date().setHours(0, 0, 0, 0);
+  const y = new Date().getFullYear();
+  const m = new Date().getMonth();
 
-  // Кандидаты: 10-е и 25-е текущего месяца, потом следующего
-  const candidates = [
-    new Date(y, m, 10),
-    new Date(y, m, 25),
+  // Все кандидаты в хронологическом порядке
+  const raw = [
+    new Date(y, m,     10),
+    new Date(y, m,     25),
     new Date(y, m + 1, 10),
     new Date(y, m + 1, 25),
   ];
 
-  for (const d of candidates) {
-    if (d <= today) continue;
-    // Если суббота (6) → пятница (-1 день), воскресенье (0) → пятница (-2 дня)
-    const dow = d.getDay();
-    if (dow === 6) d.setDate(d.getDate() - 1);
-    else if (dow === 0) d.setDate(d.getDate() - 2);
-    // После сдвига могла стать <= today (редко, но проверим)
-    if (d > today) return d;
+  function adjustWeekend(d) {
+    const copy = new Date(d.getTime());
+    const dow = copy.getDay(); // 0=вс, 6=сб
+    if (dow === 6) copy.setDate(copy.getDate() - 1); // сб → пт
+    if (dow === 0) copy.setDate(copy.getDate() - 2); // вс → пт
+    return copy;
   }
-  return candidates[2]; // fallback
+
+  for (const d of raw) {
+    const adjusted = adjustWeekend(d);
+    if (adjusted.getTime() > todayMs) return adjusted;
+  }
+  return adjustWeekend(raw[2]);
 }
 
 function initDailyCalc() {
