@@ -2036,7 +2036,7 @@ function nextPayday() {
 
   for (const ms of candidates) {
     const adjusted = toFriday(ms);
-    if (adjusted > todayMs) return new Date(adjusted);
+    if (adjusted >= todayMs) return new Date(adjusted);
   }
   return new Date(toFriday(candidates[2]));
 }
