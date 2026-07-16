@@ -46,12 +46,50 @@ tailwind.config = {
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: #0e0e12; }
   ::-webkit-scrollbar-thumb { background: #2a2a32; border-radius: 3px; }
-  .card { background: linear-gradient(145deg, #1e1e24 0%, #16161b 100%); border: 1px solid #2a2a32; }
+  .card { background: linear-gradient(145deg, #1e1e24 0%, #16161b 100%); border: 1px solid #2a2a32; transition: transform 0.2s ease, box-shadow 0.2s ease; }
   .card-elevated { background: linear-gradient(145deg, #24242c 0%, #1a1a20 100%); border: 1px solid #35353f; }
   .gold-text { background: linear-gradient(135deg, #d4a849, #e8c36a, #c9ad7a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .gold-border { border-color: #d4a84940; }
-  .btn-gold { background: linear-gradient(135deg, #8a6a2e, #a07d3a); color: #faf7f2; border: 1px solid #c9ad7a40; }
-  .btn-gold:hover { background: linear-gradient(135deg, #a07d3a, #b8944f); }
+  .btn-gold { background: linear-gradient(135deg, #8a6a2e, #a07d3a); color: #faf7f2; border: 1px solid #c9ad7a40; transition: all 0.2s ease; }
+  .btn-gold:hover { background: linear-gradient(135deg, #a07d3a, #b8944f); box-shadow: 0 0 20px rgba(212,168,73,0.25); }
+
+  /* === Animations === */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-animate {
+    animation: fadeSlideUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* === Hover lift for interactive cards === */
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px #35353f;
+  }
+
+  /* === Icon buttons === */
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 7px;
+    color: #5a5a66; transition: background 0.15s ease, color 0.15s ease;
+  }
+  .icon-btn:hover { background: #2a2a32; }
+  .icon-btn.edit:hover  { color: #d4a849; }
+  .icon-btn.del:hover   { color: #e74c3c; }
+  .icon-btn.grip { cursor: grab; }
+  .icon-btn.grip:active { cursor: grabbing; }
+
+  /* === Section labels === */
+  .section-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #5a5a66;
+  }
+
+  /* === Page spacing === */
+  .page-inner { padding: 1.5rem; max-width: 56rem; margin: 0 auto; }
+  .stack { display: flex; flex-direction: column; gap: 1rem; }
+  .stack-lg { display: flex; flex-direction: column; gap: 1.5rem; }
 </style>
 </head>
 <body class="bg-dark-300 min-h-screen text-dark-900">
@@ -92,7 +130,7 @@ tailwind.config = {
             onkeydown="if(event.key==='Enter') submitAuth()">
           <button type="button" onclick="toggleAuthPassword()" id="auth-eye"
             class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-700 hover:text-gold-600 text-xs select-none">
-            👁
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
         <p id="auth-pass-hint" class="hidden text-xs text-dark-700 mt-1">Минимум 6 символов</p>
@@ -128,9 +166,9 @@ tailwind.config = {
     <button onclick="showPage('debts')" id="nav-debts" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase" data-i18n="nav_debts">Долги</button>
     <button onclick="showPage('budget')" id="nav-budget" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase" data-i18n="nav_budget">Бюджет</button>
     <button onclick="showPage('calc')" id="nav-calc" class="flex-1 py-3.5 px-3 text-sm text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tracking-wide uppercase" data-i18n="nav_calc">Калькулятор</button>
-    <button onclick="exportCSV()" title="CSV" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition text-lg">↓</button>
+    <button onclick="exportCSV()" title="CSV" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
     <div class="relative">
-      <button onclick="toggleLangMenu()" title="Language" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition text-base">🌐</button>
+      <button onclick="toggleLangMenu()" title="Language" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
       <div id="lang-menu" class="hidden absolute right-0 top-full mt-1 card-elevated rounded-xl shadow-2xl p-2 z-50 min-w-[150px]">
         <button onclick="setLanguage('ru')" class="lang-opt w-full text-left px-3 py-2 text-sm hover:bg-dark-400 rounded-lg transition" data-lang="ru">🇷🇺 Русский</button>
         <button onclick="setLanguage('en')" class="lang-opt w-full text-left px-3 py-2 text-sm hover:bg-dark-400 rounded-lg transition" data-lang="en">🇬🇧 English</button>
@@ -144,7 +182,7 @@ tailwind.config = {
 </nav>
 
 <!-- ==================== WALLETS PAGE ==================== -->
-<div id="page-wallets" class="page active max-w-4xl mx-auto p-5">
+<div id="page-wallets" class="page active max-w-4xl mx-auto p-6">
 
   <!-- Net Worth Card -->
   <div class="card rounded-xl p-5 mb-5 gold-border border">
@@ -165,7 +203,7 @@ tailwind.config = {
     <h1 class="text-xl font-semibold gold-text tracking-wide" data-i18n="wallets_title">Кошельки</h1>
     <button onclick="openWalletModal()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="add">+ Добавить</button>
   </div>
-  <div id="wallets-list" class="space-y-3"></div>
+  <div id="wallets-list" class="space-y-4"></div>
   <div id="wallets-empty" class="hidden text-center py-16 text-dark-700">
     <div class="text-4xl mb-3 opacity-40">💳</div>
     <p class="text-dark-800" data-i18n="wallets_empty">Нет кошельков</p>
@@ -178,7 +216,7 @@ tailwind.config = {
     <button onclick="openReceivableModal()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="add">+ Добавить</button>
   </div>
   <div id="receivables-total" class="hidden card rounded-xl p-4 mb-4"></div>
-  <div id="receivables-list" class="space-y-3"></div>
+  <div id="receivables-list" class="space-y-4"></div>
   <div id="receivables-empty" class="hidden text-center py-16 text-dark-700">
     <div class="text-4xl mb-3 opacity-40">🤝</div>
     <p class="text-dark-800" data-i18n="recv_empty">Нет записей</p>
@@ -186,7 +224,7 @@ tailwind.config = {
 </div>
 
 <!-- ==================== DEBTS PAGE ==================== -->
-<div id="page-debts" class="page max-w-4xl mx-auto p-5">
+<div id="page-debts" class="page max-w-4xl mx-auto p-6">
   <div class="flex justify-between items-center mb-5">
     <h1 class="text-xl font-semibold gold-text tracking-wide" data-i18n="debts_title">Задолженности</h1>
     <div class="flex gap-2">
@@ -203,7 +241,7 @@ tailwind.config = {
 </div>
 
 <!-- ==================== BUDGET PAGE ==================== -->
-<div id="page-budget" class="page max-w-4xl mx-auto p-5">
+<div id="page-budget" class="page max-w-4xl mx-auto p-6">
   <div class="flex justify-between items-center mb-5">
     <h1 class="text-xl font-semibold gold-text tracking-wide" data-i18n="budget_title">Планирование бюджета</h1>
     <button onclick="openBudgetModal()" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="add">+ Добавить</button>
@@ -263,7 +301,7 @@ tailwind.config = {
 </div>
 
 <!-- ==================== CALCULATOR PAGE ==================== -->
-<div id="page-calc" class="page max-w-4xl mx-auto p-5">
+<div id="page-calc" class="page max-w-4xl mx-auto p-6">
   <h1 class="text-xl font-semibold gold-text tracking-wide mb-5" data-i18n="calc_title">Калькулятор распределения дохода</h1>
 
   <div class="flex gap-5 items-start flex-col lg:flex-row">
@@ -1139,12 +1177,36 @@ function fmt(amount, currency) {
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active'));
-  document.getElementById('page-' + name).classList.add('active');
+  const page = document.getElementById('page-' + name);
+  page.classList.add('active');
   document.getElementById('nav-' + name).classList.add('tab-active');
   if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); }
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
+  requestAnimationFrame(() => {
+    page.querySelectorAll('.card, .card-elevated').forEach((el, i) => {
+      el.classList.remove('card-animate');
+      void el.offsetWidth;
+      el.style.animationDelay = `${i * 40}ms`;
+      el.classList.add('card-animate');
+      el.addEventListener('animationend', () => {
+        el.classList.remove('card-animate');
+        el.style.animationDelay = '';
+      }, { once: true });
+    });
+  });
 }
+
+// ==================== ICONS ====================
+const IC = {
+  edit:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+  trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  grip:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="17" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="17" r="1" fill="currentColor"/></svg>`,
+  eye:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  eyeOff:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+  down:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  lang:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+};
 
 // ==================== DRAG & DROP ====================
 let dragSrcId = null;
@@ -1198,18 +1260,18 @@ function renderWallets() {
   if (!wallets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   list.innerHTML = wallets.map(w => `
-    <div class="card rounded-xl p-4 flex justify-between items-center ${w.exclude_from_networth ? 'opacity-60' : ''}" draggable="true" data-id="${w.id}" ondragstart="dragStart(event,'wallets')" ondragover="dragOver(event)" ondrop="dragDrop(event,'wallets')" ondragend="dragEnd(event)">
+    <div class="card card-lift rounded-xl px-4 py-4 flex justify-between items-center ${w.exclude_from_networth ? 'opacity-60' : ''}" draggable="true" data-id="${w.id}" ondragstart="dragStart(event,'wallets')" ondragover="dragOver(event)" ondrop="dragDrop(event,'wallets')" ondragend="dragEnd(event)">
       <div class="flex items-center gap-3">
-        <span class="drag-handle text-dark-600 cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</span>
+        <span class="icon-btn grip">${IC.grip}</span>
         <div>
-          <div class="font-semibold text-dark-900">${esc(w.name)}${w.exclude_from_networth ? ` <span class="text-xs text-dark-700 font-normal">${t('not_in_capital')}</span>` : ''}</div>
-          <div class="text-xs text-dark-700 mt-0.5">${w.currency}</div>
+          <div class="font-medium text-dark-900 text-sm">${esc(w.name)}${w.exclude_from_networth ? ` <span class="section-label ml-1">${t('not_in_capital')}</span>` : ''}</div>
+          <div class="section-label mt-0.5">${w.currency}</div>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="text-lg font-bold ${parseFloat(w.balance) >= 0 ? 'text-gold-600' : 'text-danger-600'}">${fmt(w.balance, w.currency)}</span>
-        <button onclick="editWallet('${w.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
-        <button onclick="deleteWallet('${w.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
+      <div class="flex items-center gap-2">
+        <span class="text-xl font-bold tracking-tight ${parseFloat(w.balance) >= 0 ? 'text-gold-600' : 'text-danger-600'}">${fmt(w.balance, w.currency)}</span>
+        <button onclick="editWallet('${w.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
+        <button onclick="deleteWallet('${w.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
       </div>
     </div>
   `).join('');
@@ -1278,15 +1340,15 @@ function renderReceivables() {
     ).join('');
 
   list.innerHTML = receivables.map(r => `
-    <div class="card rounded-xl p-4 flex justify-between items-center ${r.exclude_from_networth ? 'opacity-60' : ''}">
+    <div class="card card-lift rounded-xl px-4 py-4 flex justify-between items-center ${r.exclude_from_networth ? 'opacity-60' : ''}">
       <div>
-        <div class="font-semibold text-dark-900">${esc(r.name)}${r.exclude_from_networth ? ` <span class="text-xs text-dark-700 font-normal">${t('not_in_capital')}</span>` : ''}</div>
-        <div class="text-xs text-dark-700 mt-0.5">${r.date ? new Date(r.date).toLocaleDateString('ru-RU') : ''} ${r.note ? '· ' + esc(r.note) : ''}</div>
+        <div class="font-medium text-dark-900 text-sm">${esc(r.name)}${r.exclude_from_networth ? ` <span class="section-label ml-1">${t('not_in_capital')}</span>` : ''}</div>
+        <div class="section-label mt-0.5">${r.date ? new Date(r.date).toLocaleDateString('ru-RU') : ''} ${r.note ? '· ' + esc(r.note) : ''}</div>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="text-lg font-bold text-success-600">${fmt(r.amount, r.currency)}</span>
-        <button onclick="editReceivable('${r.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
-        <button onclick="deleteReceivable('${r.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
+      <div class="flex items-center gap-2">
+        <span class="text-xl font-bold tracking-tight text-success-600">${fmt(r.amount, r.currency)}</span>
+        <button onclick="editReceivable('${r.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
+        <button onclick="deleteReceivable('${r.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
       </div>
     </div>
   `).join('');
@@ -1381,16 +1443,16 @@ function renderDebts() {
         ${items.map(d => `
           <div class="px-4 py-3 flex justify-between items-center border-b border-dark-400 last:border-0" draggable="true" data-id="${d.id}" ondragstart="dragStart(event,'debts')" ondragover="dragOver(event)" ondrop="dragDrop(event,'debts')" ondragend="dragEnd(event)">
             <div class="flex items-center gap-3">
-              <span class="drag-handle text-dark-600 cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</span>
+              <span class="icon-btn grip">${IC.grip}</span>
               <div>
-                <div class="font-medium text-dark-900">${esc(d.name)}</div>
-                ${d.note ? `<div class="text-xs text-dark-700">${esc(d.note)}</div>` : ''}
+                <div class="font-medium text-sm text-dark-900">${esc(d.name)}</div>
+                ${d.note ? `<div class="section-label">${esc(d.note)}</div>` : ''}
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <span class="font-bold text-danger-600">${fmt(d.amount, d.currency)}</span>
-              <button onclick="editDebt('${d.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition text-sm">✎</button>
-              <button onclick="deleteDebt('${d.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition text-sm">✕</button>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold tracking-tight text-danger-600">${fmt(d.amount, d.currency)}</span>
+              <button onclick="editDebt('${d.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
+              <button onclick="deleteDebt('${d.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
             </div>
           </div>
         `).join('')}
@@ -1632,17 +1694,15 @@ function renderBudget() {
     const hasTags = tagKeys.length > 1 || (tagKeys.length === 1 && tagKeys[0] !== '');
 
     const renderItem = (item) => `
-      <div class="px-4 py-2.5 flex justify-between items-center border-b border-dark-400 last:border-0 text-sm">
+      <div class="px-4 py-3 flex justify-between items-center border-b border-dark-400 last:border-0">
         <div>
-          <span class="text-dark-900">${esc(item.subcategory || '—')}</span>
-          ${item.tag ? `<span class="bg-gold-500/15 text-gold-600 text-xs px-1.5 py-0.5 rounded ml-2">${esc(item.tag)}</span>` : ''}
-          ${item.note ? `<span class="text-dark-700 ml-2">${esc(item.note)}</span>` : ''}
-          <div class="text-xs text-dark-700">${item.recurring ? 'каждое ' + item.recurDay + '-е число' : new Date(item.date).toLocaleDateString('ru-RU')}</div>
+          <div class="text-sm font-medium text-dark-900">${esc(item.subcategory || '—')}${item.tag ? `<span class="bg-gold-500/15 text-gold-600 text-xs px-1.5 py-0.5 rounded ml-2">${esc(item.tag)}</span>` : ''}${item.note ? `<span class="section-label ml-2">${esc(item.note)}</span>` : ''}</div>
+          <div class="section-label">${item.recurring ? 'каждое ' + item.recurDay + '-е число' : new Date(item.date).toLocaleDateString('ru-RU')}</div>
         </div>
         <div class="flex items-center gap-2">
-          <span class="font-semibold text-${clr}-600">${fmt(item.amount, item.currency || 'RUB')}</span>
-          <button onclick="editBudgetItem('${item.id}')" aria-label="Редактировать" class="text-dark-700 hover:text-gold-600 transition">✎</button>
-          <button onclick="deleteBudgetItem('${item.id}')" aria-label="Удалить" class="text-dark-700 hover:text-danger-600 transition">✕</button>
+          <span class="text-base font-bold tracking-tight text-${clr}-600">${fmt(item.amount, item.currency || 'RUB')}</span>
+          <button onclick="editBudgetItem('${item.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
+          <button onclick="deleteBudgetItem('${item.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
         </div>
       </div>`;
 
@@ -1817,7 +1877,7 @@ function renderCategoryList() {
     <div class="border border-dark-500 rounded-lg p-3 bg-dark-200">
       <div class="flex justify-between items-center">
         <span class="font-medium text-dark-900">${esc(c.name)}</span>
-        <button onclick="deleteCategory('${type}', ${i})" class="text-dark-700 hover:text-danger-600 text-sm">✕</button>
+        <button onclick="deleteCategory('${type}', ${i})" class="icon-btn del">${IC.trash}</button>
       </div>
       ${c.subcategories.length ? `
         <div class="flex flex-wrap gap-1 mt-2">
@@ -1977,7 +2037,9 @@ function setAuthMode(mode) {
 
 function toggleAuthPassword() {
   const inp = document.getElementById('auth-password');
+  const btn = document.getElementById('auth-eye');
   inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.innerHTML = inp.type === 'text' ? IC.eyeOff : IC.eye;
 }
 
 async function resetPassword() {
