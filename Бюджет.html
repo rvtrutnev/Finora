@@ -266,111 +266,120 @@ tailwind.config = {
 <div id="page-calc" class="page max-w-4xl mx-auto p-5">
   <h1 class="text-xl font-semibold gold-text tracking-wide mb-5" data-i18n="calc_title">Калькулятор распределения дохода</h1>
 
-  <div class="card rounded-xl p-5 mb-5">
-    <label class="block text-xs text-dark-700 mb-2 uppercase tracking-wider" data-i18n="calc_income">Сумма дохода (₽)</label>
-    <input id="calc-income" type="number" step="0.01" placeholder="0" oninput="calcDistribution()"
-      class="w-full border-2 border-dark-400 rounded-lg px-4 py-3 text-xl font-bold text-center focus:border-gold-600 outline-none bg-dark-200 text-dark-900">
-  </div>
+  <div class="flex gap-5 items-start flex-col lg:flex-row">
 
-  <!-- Preset selector -->
-  <div class="flex gap-2 mb-5 flex-wrap">
-    <button onclick="setCalcPreset('50-30-20')" id="preset-50-30-20" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gold-500 bg-gold-500/10 text-gold-600">50 / 30 / 20</button>
-    <button onclick="setCalcPreset('60-20-20')" id="preset-60-20-20" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-dark-500 text-dark-800">60 / 20 / 20</button>
-    <button onclick="setCalcPreset('70-20-10')" id="preset-70-20-10" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-dark-500 text-dark-800">70 / 20 / 10</button>
-    <button onclick="setCalcPreset('custom')" id="preset-custom" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-dark-500 text-dark-800" data-i18n="calc_custom">Свои %</button>
-  </div>
+    <!-- Left: distribution calculator -->
+    <div class="flex-1 min-w-0 w-full">
+      <div class="card rounded-xl p-5 mb-5">
+        <label class="block text-xs text-dark-700 mb-2 uppercase tracking-wider" data-i18n="calc_income">Сумма дохода (₽)</label>
+        <input id="calc-income" type="number" step="0.01" placeholder="0" oninput="calcDistribution()"
+          class="w-full border-2 border-dark-400 rounded-lg px-4 py-3 text-xl font-bold text-center focus:border-gold-600 outline-none bg-dark-200 text-dark-900">
+      </div>
 
-  <!-- Custom percentages -->
-  <div id="calc-custom-wrap" class="hidden card rounded-xl p-4 mb-5">
-    <div class="grid grid-cols-3 gap-3">
-      <div>
-        <label class="block text-xs text-dark-700 mb-1">Житьё-бытьё %</label>
-        <input id="calc-pct-1" type="number" min="0" max="100" value="50" oninput="calcDistribution()" class="w-full border border-dark-500 rounded-lg px-3 py-2 text-sm text-center bg-dark-200 text-dark-900">
+      <!-- Preset selector -->
+      <div class="flex gap-2 mb-5 flex-wrap">
+        <button onclick="setCalcPreset('50-30-20')" id="preset-50-30-20" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gold-500 bg-gold-500/10 text-gold-600">50 / 30 / 20</button>
+        <button onclick="setCalcPreset('60-20-20')" id="preset-60-20-20" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-dark-500 text-dark-800">60 / 20 / 20</button>
+        <button onclick="setCalcPreset('70-20-10')" id="preset-70-20-10" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-dark-500 text-dark-800">70 / 20 / 10</button>
+        <button onclick="setCalcPreset('custom')" id="preset-custom" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-dark-500 text-dark-800" data-i18n="calc_custom">Свои %</button>
       </div>
-      <div>
-        <label class="block text-xs text-dark-700 mb-1">Кредиты %</label>
-        <input id="calc-pct-2" type="number" min="0" max="100" value="30" oninput="calcDistribution()" class="w-full border border-dark-500 rounded-lg px-3 py-2 text-sm text-center bg-dark-200 text-dark-900">
-      </div>
-      <div>
-        <label class="block text-xs text-dark-700 mb-1">Копилка %</label>
-        <input id="calc-pct-3" type="number" min="0" max="100" value="20" oninput="calcDistribution()" class="w-full border border-dark-500 rounded-lg px-3 py-2 text-sm text-center bg-dark-200 text-dark-900">
-      </div>
-    </div>
-    <div id="calc-pct-warn" class="text-xs text-danger-600 mt-2 hidden" data-i18n="calc_pct_warn">Сумма процентов ≠ 100%</div>
-  </div>
 
-  <!-- Results -->
-  <div class="space-y-3">
-    <div class="card rounded-xl p-5 flex justify-between items-center">
-      <div>
-        <div class="font-semibold text-dark-900" data-i18n="calc_needs">Житьё-бытьё</div>
-        <div class="text-xs text-dark-700" data-i18n="calc_needs_sub">Еда, транспорт, коммунальные, одежда</div>
+      <!-- Custom percentages -->
+      <div id="calc-custom-wrap" class="hidden card rounded-xl p-4 mb-5">
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-dark-700 mb-1">Житьё-бытьё %</label>
+            <input id="calc-pct-1" type="number" min="0" max="100" value="50" oninput="calcDistribution()" class="w-full border border-dark-500 rounded-lg px-3 py-2 text-sm text-center bg-dark-200 text-dark-900">
+          </div>
+          <div>
+            <label class="block text-xs text-dark-700 mb-1">Кредиты %</label>
+            <input id="calc-pct-2" type="number" min="0" max="100" value="30" oninput="calcDistribution()" class="w-full border border-dark-500 rounded-lg px-3 py-2 text-sm text-center bg-dark-200 text-dark-900">
+          </div>
+          <div>
+            <label class="block text-xs text-dark-700 mb-1">Копилка %</label>
+            <input id="calc-pct-3" type="number" min="0" max="100" value="20" oninput="calcDistribution()" class="w-full border border-dark-500 rounded-lg px-3 py-2 text-sm text-center bg-dark-200 text-dark-900">
+          </div>
+        </div>
+        <div id="calc-pct-warn" class="text-xs text-danger-600 mt-2 hidden" data-i18n="calc_pct_warn">Сумма процентов ≠ 100%</div>
       </div>
-      <div class="text-right">
-        <div id="calc-r1-pct" class="text-xs text-dark-700">50%</div>
-        <div id="calc-r1" class="text-xl font-bold text-gold-600">0,00 ₽</div>
-      </div>
-    </div>
-    <div class="card rounded-xl p-5 flex justify-between items-center">
-      <div>
-        <div class="font-semibold text-dark-900" data-i18n="calc_debt">Кредиты и долги</div>
-        <div class="text-xs text-dark-700" data-i18n="calc_debt_sub">Ипотека, кредиты, задолженности</div>
-      </div>
-      <div class="text-right">
-        <div id="calc-r2-pct" class="text-xs text-dark-700">30%</div>
-        <div id="calc-r2" class="text-xl font-bold text-danger-600">0,00 ₽</div>
-      </div>
-    </div>
-    <div class="card rounded-xl p-5 flex justify-between items-center">
-      <div>
-        <div class="font-semibold text-dark-900" data-i18n="calc_savings">Копилка</div>
-        <div class="text-xs text-dark-700" data-i18n="calc_savings_sub">Сбережения, инвестиции, подушка</div>
-      </div>
-      <div class="text-right">
-        <div id="calc-r3-pct" class="text-xs text-dark-700">20%</div>
-        <div id="calc-r3" class="text-xl font-bold text-success-600">0,00 ₽</div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Presets info -->
-  <div class="mt-6 card rounded-xl p-5 text-sm text-dark-800">
-    <div class="font-semibold text-gold-400 mb-3 uppercase tracking-wider text-xs" data-i18n="calc_pop">Популярные схемы</div>
-    <ul class="space-y-1.5 text-dark-800">
-      <li><span class="text-gold-600 font-medium">50/30/20</span> — <span data-i18n="calc_info1">классика: нужды / желания / сбережения</span></li>
-      <li><span class="text-gold-600 font-medium">60/20/20</span> — <span data-i18n="calc_info2">при высокой стоимости жизни</span></li>
-      <li><span class="text-gold-600 font-medium">70/20/10</span> — <span data-i18n="calc_info3">минимум в копилку, больше на текущее</span></li>
-    </ul>
-  </div>
+      <!-- Results -->
+      <div class="space-y-3">
+        <div class="card rounded-xl p-5 flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-dark-900" data-i18n="calc_needs">Житьё-бытьё</div>
+            <div class="text-xs text-dark-700" data-i18n="calc_needs_sub">Еда, транспорт, коммунальные, одежда</div>
+          </div>
+          <div class="text-right">
+            <div id="calc-r1-pct" class="text-xs text-dark-700">50%</div>
+            <div id="calc-r1" class="text-xl font-bold text-gold-600">0,00 ₽</div>
+          </div>
+        </div>
+        <div class="card rounded-xl p-5 flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-dark-900" data-i18n="calc_debt">Кредиты и долги</div>
+            <div class="text-xs text-dark-700" data-i18n="calc_debt_sub">Ипотека, кредиты, задолженности</div>
+          </div>
+          <div class="text-right">
+            <div id="calc-r2-pct" class="text-xs text-dark-700">30%</div>
+            <div id="calc-r2" class="text-xl font-bold text-danger-600">0,00 ₽</div>
+          </div>
+        </div>
+        <div class="card rounded-xl p-5 flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-dark-900" data-i18n="calc_savings">Копилка</div>
+            <div class="text-xs text-dark-700" data-i18n="calc_savings_sub">Сбережения, инвестиции, подушка</div>
+          </div>
+          <div class="text-right">
+            <div id="calc-r3-pct" class="text-xs text-dark-700">20%</div>
+            <div id="calc-r3" class="text-xl font-bold text-success-600">0,00 ₽</div>
+          </div>
+        </div>
+      </div>
 
-  <!-- Daily budget calculator -->
-  <div class="mt-5 card rounded-xl p-5">
-    <div class="font-semibold text-gold-400 mb-4 uppercase tracking-wider text-xs" data-i18n="daily_title">Сколько тратить в день</div>
-    <div class="flex gap-3 mb-4 flex-wrap">
-      <div class="flex-1 min-w-[140px]">
-        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_amount">Сумма</label>
-        <input id="daily-amount" type="number" min="0" step="0.01" placeholder="0"
-          oninput="calcDaily()"
-          class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
-      </div>
-      <div class="flex-1 min-w-[140px]">
-        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_until">До какой даты</label>
-        <input id="daily-date" type="date"
-          oninput="calcDaily()"
-          class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+      <!-- Presets info -->
+      <div class="mt-5 card rounded-xl p-5 text-sm text-dark-800">
+        <div class="font-semibold text-gold-400 mb-3 uppercase tracking-wider text-xs" data-i18n="calc_pop">Популярные схемы</div>
+        <ul class="space-y-1.5 text-dark-800">
+          <li><span class="text-gold-600 font-medium">50/30/20</span> — <span data-i18n="calc_info1">классика: нужды / желания / сбережения</span></li>
+          <li><span class="text-gold-600 font-medium">60/20/20</span> — <span data-i18n="calc_info2">при высокой стоимости жизни</span></li>
+          <li><span class="text-gold-600 font-medium">70/20/10</span> — <span data-i18n="calc_info3">минимум в копилку, больше на текущее</span></li>
+        </ul>
       </div>
     </div>
-    <div id="daily-result" class="hidden">
-      <div class="flex justify-between items-center py-3 border-t border-dark-400">
-        <span class="text-sm text-dark-800" data-i18n="daily_days_left">Осталось дней</span>
-        <span id="daily-days" class="font-bold text-dark-900">—</span>
-      </div>
-      <div class="flex justify-between items-center py-3 border-t border-dark-400">
-        <span class="text-sm text-dark-800" data-i18n="daily_per_day">Можно тратить в день</span>
-        <span id="daily-per-day" class="text-2xl font-bold text-gold-600">—</span>
+
+    <!-- Right: daily budget calculator -->
+    <div class="w-full lg:w-64 shrink-0">
+      <div class="card rounded-xl p-5">
+        <div class="font-semibold text-gold-400 mb-4 uppercase tracking-wider text-xs" data-i18n="daily_title">Сколько тратить в день</div>
+        <div class="space-y-3 mb-4">
+          <div>
+            <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_amount">Сумма</label>
+            <input id="daily-amount" type="number" min="0" step="0.01" placeholder="0"
+              oninput="calcDaily()"
+              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_until">До какой даты</label>
+            <input id="daily-date" type="date"
+              oninput="calcDaily()"
+              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+          </div>
+        </div>
+        <div id="daily-result" class="hidden">
+          <div class="flex justify-between items-center py-3 border-t border-dark-400">
+            <span class="text-xs text-dark-800" data-i18n="daily_days_left">Осталось дней</span>
+            <span id="daily-days" class="font-bold text-dark-900">—</span>
+          </div>
+          <div class="pt-3 border-t border-dark-400 text-center">
+            <div class="text-xs text-dark-700 mb-1" data-i18n="daily_per_day">Можно тратить в день</div>
+            <div id="daily-per-day" class="text-3xl font-bold text-gold-600">—</div>
+          </div>
+        </div>
+        <div id="daily-warn" class="hidden text-xs text-danger-600 mt-2" data-i18n="daily_warn">Дата уже прошла</div>
       </div>
     </div>
-    <div id="daily-warn" class="hidden text-xs text-danger-600 mt-2" data-i18n="daily_warn">Дата уже прошла</div>
+
   </div>
 </div>
 
