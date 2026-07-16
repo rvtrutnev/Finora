@@ -2047,7 +2047,7 @@ function initDailyCalc() {
   if (sum > 0) document.getElementById('daily-amount').value = Math.round(sum);
 
   const pd = nextPayday();
-  const iso = pd.toISOString().slice(0, 10);
+  const iso = `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,'0')}-${String(pd.getDate()).padStart(2,'0')}`;
   document.getElementById('daily-date').value = iso;
   calcDaily();
 }
