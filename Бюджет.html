@@ -2013,31 +2013,32 @@ function calcDistribution() {
 }
 
 function nextPayday() {
-  const todayMs = new Date().setHours(0, 0, 0, 0);
-  const y = new Date().getFullYear();
-  const m = new Date().getMonth();
+  const DAY = 86400000;
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const todayMs = now.getTime();
+  const y = now.getFullYear();
+  const m = now.getMonth();
 
-  // Все кандидаты в хронологическом порядке
-  const raw = [
-    new Date(y, m,     10),
-    new Date(y, m,     25),
-    new Date(y, m + 1, 10),
-    new Date(y, m + 1, 25),
+  // Работаем с миллисекундами — никаких мутаций объектов
+  function toFriday(ms) {
+    const dow = new Date(ms).getDay(); // 0=вс, 6=сб
+    if (dow === 6) return ms - DAY;     // сб → пт
+    if (dow === 0) return ms - 2 * DAY; // вс → пт
+    return ms;
+  }
+
+  const candidates = [
+    new Date(y, m,     10).getTime(),
+    new Date(y, m,     25).getTime(),
+    new Date(y, m + 1, 10).getTime(),
+    new Date(y, m + 1, 25).getTime(),
   ];
 
-  function adjustWeekend(d) {
-    const copy = new Date(d.getTime());
-    const dow = copy.getDay(); // 0=вс, 6=сб
-    if (dow === 6) copy.setDate(copy.getDate() - 1); // сб → пт
-    if (dow === 0) copy.setDate(copy.getDate() - 2); // вс → пт
-    return copy;
+  for (const ms of candidates) {
+    const adjusted = toFriday(ms);
+    if (adjusted > todayMs) return new Date(adjusted);
   }
-
-  for (const d of raw) {
-    const adjusted = adjustWeekend(d);
-    if (adjusted.getTime() > todayMs) return adjusted;
-  }
-  return adjustWeekend(raw[2]);
+  return new Date(toFriday(candidates[2]));
 }
 
 function initDailyCalc() {
