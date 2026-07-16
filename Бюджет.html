@@ -459,6 +459,10 @@ tailwind.config = {
         <input type="checkbox" id="wallet-exclude" class="w-4 h-4 accent-gold-600">
         <span class="text-sm text-dark-800" data-i18n="exclude_networth">Не учитывать в общем капитале</span>
       </label>
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" id="wallet-daily" class="w-4 h-4 accent-gold-600">
+        <span class="text-sm text-dark-800" data-i18n="wallet_use_daily">Использовать для расчёта ежедневных трат</span>
+      </label>
     </div>
     <div class="flex gap-3 mt-5">
       <button onclick="closeModal('wallet')" class="flex-1 border border-dark-500 rounded-lg py-2.5 text-sm text-dark-800 hover:bg-dark-400 transition" data-i18n="cancel">Отмена</button>
@@ -716,7 +720,7 @@ const TRANSLATIONS = {
     cat_manage:'Управление категориями', cat_add:'Добавить категорию', cat_name_ph:'Название категории',
     subcat_add:'Добавить подкатегорию', subcat_ph:'Подкатегория',
     payoff_hint_snowball:'Сначала гасим долг с наименьшим остатком — быстрее получаем психологическую победу',
-    exclude_networth:'Не учитывать в общем капитале', not_in_capital:'· не в капитале',
+    exclude_networth:'Не учитывать в общем капитале', not_in_capital:'· не в капитале', wallet_use_daily:'Использовать для расчёта ежедневных трат',
     cur_rub:'₽ — Российский рубль', cur_usd:'$ — Доллар США', cur_eur:'€ — Евро',
     nw_title:'Общий капитал', nw_assets:'Активы', nw_liabilities:'Обязательства',
     nw_history:'Копим историю — динамика появится через пару дней',
@@ -788,7 +792,7 @@ const TRANSLATIONS = {
     cat_manage:'Manage categories', cat_add:'Add category', cat_name_ph:'Category name',
     subcat_add:'Add subcategory', subcat_ph:'Subcategory',
     payoff_hint_snowball:'Pay off the smallest balance first — faster psychological wins',
-    exclude_networth:'Exclude from net worth', not_in_capital:'· excluded',
+    exclude_networth:'Exclude from net worth', not_in_capital:'· excluded', wallet_use_daily:'Use for daily spending calculation',
     cur_rub:'₽ — Russian Ruble', cur_usd:'$ — US Dollar', cur_eur:'€ — Euro',
     nw_title:'Net Worth', nw_assets:'Assets', nw_liabilities:'Liabilities',
     nw_history:'Building history — dynamics will appear in a few days',
@@ -860,7 +864,7 @@ const TRANSLATIONS = {
     cat_manage:'Kategorien verwalten', cat_add:'Kategorie hinzufügen', cat_name_ph:'Kategoriename',
     subcat_add:'Unterkategorie hinzufügen', subcat_ph:'Unterkategorie',
     payoff_hint_snowball:'Kleinsten Schuldbetrag zuerst tilgen — schnelle Erfolge',
-    exclude_networth:'Nicht im Nettovermögen', not_in_capital:'· ausgeschlossen',
+    exclude_networth:'Nicht im Nettovermögen', not_in_capital:'· ausgeschlossen', wallet_use_daily:'Für tägliche Ausgaben verwenden',
     cur_rub:'₽ — Russischer Rubel', cur_usd:'$ — US-Dollar', cur_eur:'€ — Euro',
     nw_title:'Nettovermögen', nw_assets:'Aktiva', nw_liabilities:'Verbindlichkeiten',
     nw_history:'Historie wird aufgebaut — Dynamik erscheint in wenigen Tagen',
@@ -924,7 +928,7 @@ const TRANSLATIONS = {
     auth_confirm_email:"Vérifiez votre e-mail — confirmation requise",
     save:'Enregistrer', cancel:'Annuler', add:'+ Ajouter',
     name:'Nom', amount:'Montant', currency:'Devise', note:'Note', optional:'Facultatif',
-    exclude_networth:'Exclure de la valeur nette', not_in_capital:'· exclu',
+    exclude_networth:'Exclure de la valeur nette', not_in_capital:'· exclu', wallet_use_daily:'Utiliser pour le calcul des dépenses quotidiennes',
     cur_rub:'₽ — Rouble russe', cur_usd:'$ — Dollar américain', cur_eur:'€ — Euro',
     nw_title:'Valeur nette', nw_assets:'Actifs', nw_liabilities:'Passifs',
     nw_history:"Accumulation de l'historique — la dynamique apparaîtra dans quelques jours",
@@ -987,7 +991,7 @@ const TRANSLATIONS = {
     auth_confirm_email:'Revisa tu correo — se requiere confirmación',
     save:'Guardar', cancel:'Cancelar', add:'+ Agregar',
     name:'Nombre', amount:'Importe', currency:'Moneda', note:'Nota', optional:'Opcional',
-    exclude_networth:'Excluir del patrimonio neto', not_in_capital:'· excluido',
+    exclude_networth:'Excluir del patrimonio neto', not_in_capital:'· excluido', wallet_use_daily:'Usar para el cálculo de gastos diarios',
     cur_rub:'₽ — Rublo ruso', cur_usd:'$ — Dólar estadounidense', cur_eur:'€ — Euro',
     nw_title:'Patrimonio neto', nw_assets:'Activos', nw_liabilities:'Pasivos',
     nw_history:'Acumulando historial — la dinámica aparecerá en unos días',
@@ -1192,6 +1196,7 @@ function showPage(name) {
   if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); }
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
+  if (name === 'calc') initDailyCalc();
   requestAnimationFrame(() => {
     page.querySelectorAll('.card, .card-elevated').forEach((el, i) => {
       el.classList.remove('card-animate');
@@ -1292,6 +1297,7 @@ function openWalletModal(id) {
   document.getElementById('wallet-balance').value = '';
   document.getElementById('wallet-currency').value = 'RUB';
   document.getElementById('wallet-exclude').checked = false;
+  document.getElementById('wallet-daily').checked = false;
   document.getElementById('wallet-modal-title').textContent = t('wallet_new');
   document.getElementById('modal-wallet').classList.remove('hidden');
 }
@@ -1304,6 +1310,7 @@ function editWallet(id) {
   document.getElementById('wallet-balance').value = w.balance;
   document.getElementById('wallet-currency').value = w.currency;
   document.getElementById('wallet-exclude').checked = !!w.exclude_from_networth;
+  document.getElementById('wallet-daily').checked = !!w.use_for_daily;
   document.getElementById('wallet-modal-title').textContent = t('wallet_edit');
   document.getElementById('modal-wallet').classList.remove('hidden');
 }
@@ -1313,11 +1320,12 @@ async function saveWallet() {
   const balance = parseFloat(document.getElementById('wallet-balance').value) || 0;
   const currency = document.getElementById('wallet-currency').value;
   const exclude_from_networth = document.getElementById('wallet-exclude').checked;
+  const use_for_daily = document.getElementById('wallet-daily').checked;
   const editId = document.getElementById('wallet-edit-id').value;
   if (!name) return;
   const id = editId || uid();
   const { data: { user } } = await sb.auth.getUser();
-  const row = { id, user_id: user.id, name, balance, currency, exclude_from_networth };
+  const row = { id, user_id: user.id, name, balance, currency, exclude_from_networth, use_for_daily };
   const err = await dbUpsert('wallets', row);
   if (err) { showToast(t('err_save') + err.message); return; }
   if (editId) { const w = wallets.find(x => x.id === editId); if (w) Object.assign(w, row); }
@@ -2002,6 +2010,43 @@ function calcDistribution() {
   document.getElementById('calc-r1').textContent = fmt(income * p1 / 100, 'RUB');
   document.getElementById('calc-r2').textContent = fmt(income * p2 / 100, 'RUB');
   document.getElementById('calc-r3').textContent = fmt(income * p3 / 100, 'RUB');
+}
+
+function nextPayday() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const y = today.getFullYear();
+  const m = today.getMonth();
+
+  // Кандидаты: 10-е и 25-е текущего месяца, потом следующего
+  const candidates = [
+    new Date(y, m, 10),
+    new Date(y, m, 25),
+    new Date(y, m + 1, 10),
+    new Date(y, m + 1, 25),
+  ];
+
+  for (const d of candidates) {
+    if (d <= today) continue;
+    // Если суббота (6) → пятница (-1 день), воскресенье (0) → пятница (-2 дня)
+    const dow = d.getDay();
+    if (dow === 6) d.setDate(d.getDate() - 1);
+    else if (dow === 0) d.setDate(d.getDate() - 2);
+    // После сдвига могла стать <= today (редко, но проверим)
+    if (d > today) return d;
+  }
+  return candidates[2]; // fallback
+}
+
+function initDailyCalc() {
+  const sum = wallets.filter(w => w.use_for_daily && w.currency === 'RUB')
+    .reduce((s, w) => s + (parseFloat(w.balance) || 0), 0);
+  if (sum > 0) document.getElementById('daily-amount').value = Math.round(sum);
+
+  const pd = nextPayday();
+  const iso = pd.toISOString().slice(0, 10);
+  document.getElementById('daily-date').value = iso;
+  calcDaily();
 }
 
 function calcDaily() {
