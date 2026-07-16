@@ -342,6 +342,36 @@ tailwind.config = {
       <li><span class="text-gold-600 font-medium">70/20/10</span> — <span data-i18n="calc_info3">минимум в копилку, больше на текущее</span></li>
     </ul>
   </div>
+
+  <!-- Daily budget calculator -->
+  <div class="mt-5 card rounded-xl p-5">
+    <div class="font-semibold text-gold-400 mb-4 uppercase tracking-wider text-xs" data-i18n="daily_title">Сколько тратить в день</div>
+    <div class="flex gap-3 mb-4 flex-wrap">
+      <div class="flex-1 min-w-[140px]">
+        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_amount">Сумма</label>
+        <input id="daily-amount" type="number" min="0" step="0.01" placeholder="0"
+          oninput="calcDaily()"
+          class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+      </div>
+      <div class="flex-1 min-w-[140px]">
+        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_until">До какой даты</label>
+        <input id="daily-date" type="date"
+          oninput="calcDaily()"
+          class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+      </div>
+    </div>
+    <div id="daily-result" class="hidden">
+      <div class="flex justify-between items-center py-3 border-t border-dark-400">
+        <span class="text-sm text-dark-800" data-i18n="daily_days_left">Осталось дней</span>
+        <span id="daily-days" class="font-bold text-dark-900">—</span>
+      </div>
+      <div class="flex justify-between items-center py-3 border-t border-dark-400">
+        <span class="text-sm text-dark-800" data-i18n="daily_per_day">Можно тратить в день</span>
+        <span id="daily-per-day" class="text-2xl font-bold text-gold-600">—</span>
+      </div>
+    </div>
+    <div id="daily-warn" class="hidden text-xs text-danger-600 mt-2" data-i18n="daily_warn">Дата уже прошла</div>
+  </div>
 </div>
 
 <!-- ==================== MODALS ==================== -->
@@ -677,6 +707,8 @@ const TRANSLATIONS = {
     calc_info3:'70/20/10 — минимум в копилку, больше на текущее',
     err_save:'Ошибка сохранения: ', err_del:'Не удалось удалить: ',
     csv_wallet:'Кошелёк', csv_debt:'Долг', csv_recv:'Мне должны', csv_budget:'Бюджет',
+    daily_title:'Сколько тратить в день', daily_amount:'Сумма', daily_until:'До какой даты',
+    daily_days_left:'Осталось дней', daily_per_day:'Можно тратить в день', daily_warn:'Дата уже прошла',
     csv_headers:'Раздел,Название,Сумма,Валюта,Дата/Тип,Категория,Подкатегория,Тег,Примечание',
   },
   en: {
@@ -747,6 +779,8 @@ const TRANSLATIONS = {
     calc_info3:'70/20/10 — minimum savings, more for current expenses',
     err_save:'Save error: ', err_del:'Could not delete: ',
     csv_wallet:'Wallet', csv_debt:'Debt', csv_recv:'Receivable', csv_budget:'Budget',
+    daily_title:'Daily spending limit', daily_amount:'Amount', daily_until:'Until date',
+    daily_days_left:'Days remaining', daily_per_day:'You can spend per day', daily_warn:'Date has already passed',
     csv_headers:'Section,Name,Amount,Currency,Date/Type,Category,Subcategory,Tag,Note',
   },
   de: {
@@ -817,6 +851,8 @@ const TRANSLATIONS = {
     calc_info3:'70/20/10 — wenig sparen, mehr für laufende Ausgaben',
     err_save:'Speicherfehler: ', err_del:'Löschen fehlgeschlagen: ',
     csv_wallet:'Konto', csv_debt:'Schuld', csv_recv:'Forderung', csv_budget:'Budget',
+    daily_title:'Tagesbudget berechnen', daily_amount:'Betrag', daily_until:'Bis zum Datum',
+    daily_days_left:'Verbleibende Tage', daily_per_day:'Pro Tag ausgeben', daily_warn:'Datum liegt in der Vergangenheit',
     csv_headers:'Abschnitt,Name,Betrag,Währung,Datum/Typ,Kategorie,Unterkategorie,Tag,Notiz',
   },
   fr: {
@@ -878,6 +914,8 @@ const TRANSLATIONS = {
     calc_info2:'60/20/20 — pour un coût de vie élevé',
     calc_info3:"70/20/10 — épargne minimale, plus pour les dépenses courantes",
     csv_wallet:'Compte', csv_debt:'Dette', csv_recv:'Créance', csv_budget:'Budget',
+    daily_title:'Budget journalier', daily_amount:'Montant', daily_until:"Jusqu'à la date",
+    daily_days_left:'Jours restants', daily_per_day:'À dépenser par jour', daily_warn:'La date est déjà passée',
     csv_headers:'Section,Nom,Montant,Devise,Date/Type,Catégorie,Sous-catégorie,Étiquette,Note',
   },
   es: {
@@ -939,6 +977,8 @@ const TRANSLATIONS = {
     calc_info2:'60/20/20 — para alto costo de vida',
     calc_info3:'70/20/10 — mínimo en ahorros, más para gastos actuales',
     csv_wallet:'Cuenta', csv_debt:'Deuda', csv_recv:'Por cobrar', csv_budget:'Presupuesto',
+    daily_title:'Presupuesto diario', daily_amount:'Importe', daily_until:'Hasta la fecha',
+    daily_days_left:'Días restantes', daily_per_day:'Puedes gastar al día', daily_warn:'La fecha ya pasó',
     csv_headers:'Sección,Nombre,Importe,Moneda,Fecha/Tipo,Categoría,Subcategoría,Etiqueta,Nota',
   },
 };
@@ -1884,6 +1924,28 @@ function calcDistribution() {
   document.getElementById('calc-r1').textContent = fmt(income * p1 / 100, 'RUB');
   document.getElementById('calc-r2').textContent = fmt(income * p2 / 100, 'RUB');
   document.getElementById('calc-r3').textContent = fmt(income * p3 / 100, 'RUB');
+}
+
+function calcDaily() {
+  const amount = parseFloat(document.getElementById('daily-amount').value) || 0;
+  const dateVal = document.getElementById('daily-date').value;
+  const result = document.getElementById('daily-result');
+  const warn = document.getElementById('daily-warn');
+
+  result.classList.add('hidden');
+  warn.classList.add('hidden');
+
+  if (!amount || !dateVal) return;
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const target = new Date(dateVal); target.setHours(0, 0, 0, 0);
+  const days = Math.round((target - today) / 86400000);
+
+  if (days <= 0) { warn.classList.remove('hidden'); return; }
+
+  document.getElementById('daily-days').textContent = days;
+  document.getElementById('daily-per-day').textContent = fmt(amount / days, 'RUB');
+  result.classList.remove('hidden');
 }
 
 // ==================== AUTH ====================
