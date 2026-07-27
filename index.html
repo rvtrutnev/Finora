@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="ru"><head>
+<html lang="ru">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Finora</title>
@@ -14,7 +15,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
 tailwind.config = {
   theme: {
@@ -91,11 +93,11 @@ tailwind.config = {
   .stack { display: flex; flex-direction: column; gap: 1rem; }
   .stack-lg { display: flex; flex-direction: column; gap: 1.5rem; }
 </style>
-<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0px}.right-0{right:0px}.right-3{right:0.75rem}.top-0{top:0px}.top-1\/2{top:50%}.top-20{top:5rem}.top-full{top:100%}.z-40{z-index:40}.z-50{z-index:50}.m-4{margin:1rem}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mb-6{margin-bottom:1.5rem}.ml-3{margin-left:0.75rem}.mt-1{margin-top:0.25rem}.mt-10{margin-top:2.5rem}.mt-16{margin-top:4rem}.mt-2{margin-top:0.5rem}.mt-20{margin-top:5rem}.mt-3{margin-top:0.75rem}.mt-5{margin-top:1.25rem}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-28{height:7rem}.h-4{height:1rem}.h-7{height:1.75rem}.max-h-\[80vh\]{max-height:80vh}.min-h-screen{min-height:100vh}.w-28{width:7rem}.w-4{width:1rem}.w-48{width:12rem}.w-7{width:1.75rem}.w-full{width:100%}.min-w-0{min-width:0px}.min-w-\[150px\]{min-width:150px}.min-w-\[180px\]{min-width:180px}.max-w-4xl{max-width:56rem}.max-w-lg{max-width:32rem}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.shrink-0{flex-shrink:0}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.select-none{-webkit-user-select:none;user-select:none}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-6{gap:1.5rem}.space-y-1\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.375rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-y-auto{overflow-y:auto}.rounded-2xl{border-radius:1rem}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-danger-500{--tw-border-opacity:1;border-color:rgb(192 57 43 / var(--tw-border-opacity, 1))}.border-dark-400{--tw-border-opacity:1;border-color:rgb(42 42 50 / var(--tw-border-opacity, 1))}.border-dark-500{--tw-border-opacity:1;border-color:rgb(53 53 63 / var(--tw-border-opacity, 1))}.border-gold-500{--tw-border-opacity:1;border-color:rgb(160 125 58 / var(--tw-border-opacity, 1))}.bg-danger-500\/10{background-color:rgb(192 57 43 / 0.1)}.bg-dark-200{--tw-bg-opacity:1;background-color:rgb(18 18 23 / var(--tw-bg-opacity, 1))}.bg-dark-300{--tw-bg-opacity:1;background-color:rgb(14 14 18 / var(--tw-bg-opacity, 1))}.bg-gold-500\/10{background-color:rgb(160 125 58 / 0.1)}.p-2{padding:0.5rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-16{padding-top:4rem;padding-bottom:4rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pr-10{padding-right:2.5rem}.pt-3{padding-top:0.75rem}.pt-4{padding-top:1rem}.pt-8{padding-top:2rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:0.025em}.tracking-wider{letter-spacing:0.05em}.text-danger-600{--tw-text-opacity:1;color:rgb(231 76 60 / var(--tw-text-opacity, 1))}.text-dark-600{--tw-text-opacity:1;color:rgb(68 68 79 / var(--tw-text-opacity, 1))}.text-dark-700{--tw-text-opacity:1;color:rgb(90 90 102 / var(--tw-text-opacity, 1))}.text-dark-800{--tw-text-opacity:1;color:rgb(138 138 150 / var(--tw-text-opacity, 1))}.text-dark-900{--tw-text-opacity:1;color:rgb(176 176 186 / var(--tw-text-opacity, 1))}.text-gold-400{--tw-text-opacity:1;color:rgb(184 148 79 / var(--tw-text-opacity, 1))}.text-gold-600{--tw-text-opacity:1;color:rgb(212 168 73 / var(--tw-text-opacity, 1))}.text-success-500{--tw-text-opacity:1;color:rgb(26 154 92 / var(--tw-text-opacity, 1))}.text-success-600{--tw-text-opacity:1;color:rgb(46 204 113 / var(--tw-text-opacity, 1))}.underline{-webkit-text-decoration-line:underline;text-decoration-line:underline}.accent-gold-600{accent-color:#d4a849}.opacity-40{opacity:0.4}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-200{transition-duration:200ms}.hover\:bg-dark-400:hover{--tw-bg-opacity:1;background-color:rgb(42 42 50 / var(--tw-bg-opacity, 1))}.hover\:bg-gold-500\/10:hover{background-color:rgb(160 125 58 / 0.1)}.hover\:text-danger-600:hover{--tw-text-opacity:1;color:rgb(231 76 60 / var(--tw-text-opacity, 1))}.hover\:text-gold-600:hover{--tw-text-opacity:1;color:rgb(212 168 73 / var(--tw-text-opacity, 1))}.focus\:border-gold-600:focus{--tw-border-opacity:1;border-color:rgb(212 168 73 / var(--tw-border-opacity, 1))}@media (min-width: 768px){.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}}@media (min-width: 1024px){.lg\:w-64{width:16rem}.lg\:flex-row{flex-direction:row}}</style></head>
+</head>
 <body class="bg-dark-300 min-h-screen text-dark-900">
 
 <!-- ==================== AUTH SCREEN ==================== -->
-<div id="auth-screen" class="fixed inset-0 z-50 bg-dark-300 flex items-center justify-center p-4">
+<div id="auth-screen" class="hidden fixed inset-0 z-50 bg-dark-300 flex items-center justify-center p-4">
   <div class="card-elevated rounded-xl shadow-2xl p-8 w-full max-w-sm">
     <div class="text-center mb-6">
       <img src="logo.png" alt="Finora" class="w-28 h-28 mx-auto mb-2 rounded-2xl">
@@ -119,14 +121,18 @@ tailwind.config = {
     <div id="auth-fields" class="space-y-3">
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Email</label>
-        <input id="auth-email" type="email" placeholder="you@example.com" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        <input id="auth-email" type="email" placeholder="you@example.com"
+          class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
       <div id="auth-password-wrap">
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider">Пароль</label>
         <div class="relative">
-          <input id="auth-password" type="password" placeholder="••••••••" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none pr-10" onkeydown="if(event.key==='Enter') submitAuth()">
-          <button type="button" onclick="toggleAuthPassword()" id="auth-eye" class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-700 hover:text-gold-600 text-xs select-none">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <input id="auth-password" type="password" placeholder="••••••••"
+            class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none pr-10"
+            onkeydown="if(event.key==='Enter') submitAuth()">
+          <button type="button" onclick="toggleAuthPassword()" id="auth-eye"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-700 hover:text-gold-600 text-xs select-none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
         <p id="auth-pass-hint" class="hidden text-xs text-dark-700 mt-1" data-i18n="auth_pass_hint">Минимум 8 символов</p>
@@ -140,36 +146,42 @@ tailwind.config = {
     <div id="auth-error" class="hidden mt-3 text-xs text-danger-600 text-center"></div>
     <div id="auth-success" class="hidden mt-3 text-xs text-success-500 text-center"></div>
 
-    <button onclick="submitAuth()" id="auth-submit-btn" class="w-full btn-gold rounded-lg py-2.5 text-sm font-medium mt-5 transition">Войти</button>
+    <button onclick="submitAuth()" id="auth-submit-btn"
+      class="w-full btn-gold rounded-lg py-2.5 text-sm font-medium mt-5 transition">
+      Войти
+    </button>
   </div>
 </div>
 
 <!-- ==================== LOADING SCREEN ==================== -->
-<div id="loading-screen" class="fixed inset-0 z-50 bg-dark-300 flex items-center justify-center hidden">
+<div id="loading-screen" class="fixed inset-0 z-50 bg-dark-300 flex items-center justify-center">
   <div class="text-center">
     <div class="text-3xl gold-text font-semibold mb-2">Finora</div>
     <div class="text-dark-700 text-xs uppercase tracking-wider">Загрузка...</div>
   </div>
 </div>
 
-<nav class="bg-dark-200 border-b border-dark-400 sticky top-0 z-40" style="display: none;">
+<nav class="bg-dark-200 border-b border-dark-400 sticky top-0 z-40">
   <div class="max-w-4xl mx-auto flex items-center">
     <img src="logo.png" alt="Finora" class="h-7 w-7 ml-3 rounded-lg flex-shrink-0">
     <button onclick="showPage('wallets')" id="nav-wallets" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tab-active">
-      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M16 12h2"></path><path d="M2 10h20"></path></svg><span class="text-xs font-medium" data-i18n="nav_wallets">Кошельки</span></div>
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h2"/><path d="M2 10h20"/></svg><span class="text-xs font-medium" data-i18n="nav_wallets">Кошельки</span></div>
     </button>
     <button onclick="showPage('debts')" id="nav-debts" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
-      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path><path d="M12 6v6l4 2"></path></svg><span class="text-xs font-medium" data-i18n="nav_debts">Долги</span></div>
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg><span class="text-xs font-medium" data-i18n="nav_debts">Долги</span></div>
     </button>
     <button onclick="showPage('budget')" id="nav-budget" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
-      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><path d="M8 10h8M8 14h5"></path></svg><span class="text-xs font-medium" data-i18n="nav_budget">Бюджет</span></div>
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg><span class="text-xs font-medium" data-i18n="nav_budget">Бюджет</span></div>
     </button>
     <button onclick="showPage('calc')" id="nav-calc" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
-      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="8" y1="10" x2="10" y2="10"></line><line x1="14" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="10" y2="14"></line><line x1="14" y1="14" x2="16" y2="14"></line><line x1="8" y1="18" x2="10" y2="18"></line><line x1="14" y1="18" x2="16" y2="18"></line></svg><span class="text-xs font-medium" data-i18n="nav_calc">Калькулятор</span></div>
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg><span class="text-xs font-medium" data-i18n="nav_calc">Калькулятор</span></div>
     </button>
-    <button onclick="exportCSV()" title="CSV" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+    <button onclick="showPage('import')" id="nav-import" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="text-xs font-medium" data-i18n="nav_import">Импорт</span></div>
+    </button>
+    <button onclick="exportCSV()" title="CSV" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
     <div class="relative">
-      <button onclick="toggleLangMenu()" title="Language" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></button>
+      <button onclick="toggleLangMenu()" title="Language" class="px-3 py-3.5 text-dark-700 hover:text-gold-600 transition flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
       <div id="lang-menu" class="hidden absolute right-0 top-full mt-1 card-elevated rounded-xl shadow-2xl p-2 z-50 min-w-[150px]">
         <button onclick="setLanguage('ru')" class="lang-opt w-full text-left px-3 py-2 text-sm hover:bg-dark-400 rounded-lg transition" data-lang="ru">🇷🇺 Русский</button>
         <button onclick="setLanguage('en')" class="lang-opt w-full text-left px-3 py-2 text-sm hover:bg-dark-400 rounded-lg transition" data-lang="en">🇬🇧 English</button>
@@ -273,9 +285,9 @@ tailwind.config = {
 
   <!-- Month selector -->
   <div class="flex items-center justify-center gap-4 mb-5">
-    <button onclick="changeMonth(-1)" class="p-2 hover:bg-dark-400 rounded-lg transition text-dark-800 hover:text-gold-600">←</button>
+    <button onclick="changeMonth(-1)" class="p-2 hover:bg-dark-400 rounded-lg transition text-dark-800 hover:text-gold-600">&larr;</button>
     <span id="budget-month-label" class="text-lg font-semibold text-dark-900 min-w-[180px] text-center tracking-wide"></span>
-    <button onclick="changeMonth(1)" class="p-2 hover:bg-dark-400 rounded-lg transition text-dark-800 hover:text-gold-600">→</button>
+    <button onclick="changeMonth(1)" class="p-2 hover:bg-dark-400 rounded-lg transition text-dark-800 hover:text-gold-600">&rarr;</button>
   </div>
 
   <!-- Summary -->
@@ -334,7 +346,8 @@ tailwind.config = {
     <div class="flex-1 min-w-0 w-full">
       <div class="card rounded-xl p-5 mb-5">
         <label class="block text-xs text-dark-700 mb-2 uppercase tracking-wider" data-i18n="calc_income">Сумма дохода (₽)</label>
-        <input id="calc-income" type="number" step="0.01" placeholder="0" oninput="calcDistribution()" class="w-full border-2 border-dark-400 rounded-lg px-4 py-3 text-xl font-bold text-center focus:border-gold-600 outline-none bg-dark-200 text-dark-900">
+        <input id="calc-income" type="number" step="0.01" placeholder="0" oninput="calcDistribution()"
+          class="w-full border-2 border-dark-400 rounded-lg px-4 py-3 text-xl font-bold text-center focus:border-gold-600 outline-none bg-dark-200 text-dark-900">
       </div>
 
       <!-- Preset selector -->
@@ -402,9 +415,9 @@ tailwind.config = {
       <div class="mt-5 card rounded-xl p-5 text-sm text-dark-800">
         <div class="font-semibold text-gold-400 mb-3 uppercase tracking-wider text-xs" data-i18n="calc_pop">Популярные схемы</div>
         <ul class="space-y-1.5 text-dark-800">
-          <li><span class="text-gold-600 font-medium">50/30/20</span> — <span data-i18n="calc_info1">50/30/20 — классика: нужды / желания / сбережения</span></li>
-          <li><span class="text-gold-600 font-medium">60/20/20</span> — <span data-i18n="calc_info2">60/20/20 — при высокой стоимости жизни</span></li>
-          <li><span class="text-gold-600 font-medium">70/20/10</span> — <span data-i18n="calc_info3">70/20/10 — минимум в копилку, больше на текущее</span></li>
+          <li><span class="text-gold-600 font-medium">50/30/20</span> — <span data-i18n="calc_info1">классика: нужды / желания / сбережения</span></li>
+          <li><span class="text-gold-600 font-medium">60/20/20</span> — <span data-i18n="calc_info2">при высокой стоимости жизни</span></li>
+          <li><span class="text-gold-600 font-medium">70/20/10</span> — <span data-i18n="calc_info3">минимум в копилку, больше на текущее</span></li>
         </ul>
       </div>
     </div>
@@ -416,31 +429,21 @@ tailwind.config = {
         <div class="space-y-3 mb-4">
           <div>
             <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_amount">Сумма</label>
-            <input id="daily-amount" type="number" min="0" step="0.01" placeholder="0" oninput="calcDaily()" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+            <input id="daily-amount" type="number" min="0" step="0.01" placeholder="0"
+              oninput="calcDaily()"
+              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
           </div>
           <div>
             <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="daily_until">До какой даты</label>
-            <input id="daily-date" type="date" oninput="calcDaily()" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+            <input id="daily-date" type="date"
+              oninput="calcDaily()"
+              class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
           </div>
         </div>
         <div id="daily-result" class="hidden">
           <div class="flex justify-between items-center py-3 border-t border-dark-400">
-            <span class="text-xs text-dark-800" data-i18n="daily_days_left">Осталось</span>
+            <span class="text-xs text-dark-800" data-i18n="daily_days_left">Осталось дней</span>
             <span id="daily-days" class="font-bold text-dark-900">—</span>
-          </div>
-          <div class="space-y-1 py-3 border-t border-dark-400 text-xs text-dark-700">
-            <div class="flex justify-between gap-3">
-              <span data-i18n="daily_source_balance">Доступный баланс</span>
-              <span id="daily-source-balance" class="text-dark-900">—</span>
-            </div>
-            <div class="flex justify-between gap-3">
-              <span data-i18n="daily_reserved">Будущие регулярные расходы</span>
-              <span id="daily-reserved" class="text-danger-600">—</span>
-            </div>
-            <div class="flex justify-between gap-3 font-medium">
-              <span data-i18n="daily_safe_total">Безопасно потратить</span>
-              <span id="daily-safe-total" class="text-success-600">—</span>
-            </div>
           </div>
           <div class="pt-3 border-t border-dark-400 text-center">
             <div class="text-xs text-dark-700 mb-1" data-i18n="daily_per_day">Можно тратить в день</div>
@@ -451,6 +454,71 @@ tailwind.config = {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ==================== IMPORT PAGE ==================== -->
+<div id="page-import" class="page max-w-4xl mx-auto p-6">
+  <h1 class="text-xl font-semibold gold-text tracking-wide mb-2" data-i18n="nav_import">Импорт выписки</h1>
+  <p class="text-sm text-dark-700 mb-6" data-i18n="import_hint">Загрузите CSV или Excel-выписку из банка — операции автоматически разобьются по категориям</p>
+
+  <!-- Drop zone -->
+  <div id="import-dropzone"
+    ondragover="event.preventDefault(); this.classList.add('border-gold-500')"
+    ondragleave="this.classList.remove('border-gold-500')"
+    ondrop="importDrop(event)"
+    onclick="document.getElementById('import-file-input').click()"
+    class="border-2 border-dashed border-dark-500 rounded-xl p-10 text-center cursor-pointer hover:border-gold-500 transition-colors mb-6">
+    <input type="file" id="import-file-input" accept=".csv,.xls,.xlsx" class="hidden" onchange="importFile(this.files[0])">
+    <div class="text-4xl mb-3 opacity-40">📂</div>
+    <p class="text-dark-800 font-medium" data-i18n="import_drop">Перетащите файл или нажмите для выбора</p>
+    <p class="text-xs text-dark-700 mt-1">CSV, XLS, XLSX · Т-Банк, Альфа-Банк</p>
+  </div>
+
+  <!-- Bank selector (shown when bank not detected) -->
+  <div id="import-bank-selector" class="hidden mb-5">
+    <p class="text-sm text-dark-700 mb-3" data-i18n="import_select_bank">Не удалось определить банк. Выберите вручную:</p>
+    <div class="flex gap-3">
+      <button onclick="importWithBank('tbank')" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">Т-Банк</button>
+      <button onclick="importWithBank('alfa')" class="btn-gold px-4 py-2 rounded-lg text-sm font-medium">Альфа-Банк</button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div id="import-stats" class="hidden card rounded-xl p-4 mb-4 flex flex-wrap gap-6">
+    <div><div class="section-label mb-1" data-i18n="import_total">Операций</div><div id="import-stat-count" class="text-lg font-bold text-dark-900">0</div></div>
+    <div><div class="section-label mb-1" data-i18n="expenses">Расходы</div><div id="import-stat-exp" class="text-lg font-bold text-danger-600">0</div></div>
+    <div><div class="section-label mb-1" data-i18n="incomes">Доходы</div><div id="import-stat-inc" class="text-lg font-bold text-success-600">0</div></div>
+    <div class="ml-auto flex items-center gap-3">
+      <label class="flex items-center gap-2 cursor-pointer text-sm text-dark-800">
+        <input type="checkbox" id="import-skip-income" class="w-4 h-4 accent-gold-600" onchange="renderImportTable()">
+        <span data-i18n="import_skip_income">Не импортировать доходы</span>
+      </label>
+      <button onclick="saveImport()" class="btn-gold px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200" data-i18n="import_save">Сохранить в бюджет</button>
+    </div>
+  </div>
+
+  <!-- Preview table -->
+  <div id="import-preview" class="hidden card rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-dark-400/50 text-left">
+            <th class="px-4 py-3 section-label w-8"><input type="checkbox" id="import-check-all" class="w-4 h-4 accent-gold-600" onchange="toggleAllImport(this.checked)"></th>
+            <th class="px-4 py-3 section-label" data-i18n="date">Дата</th>
+            <th class="px-4 py-3 section-label" data-i18n="import_desc">Описание</th>
+            <th class="px-4 py-3 section-label text-right" data-i18n="amount">Сумма</th>
+            <th class="px-4 py-3 section-label" data-i18n="type">Тип</th>
+            <th class="px-4 py-3 section-label" data-i18n="category">Категория</th>
+          </tr>
+        </thead>
+        <tbody id="import-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="import-empty" class="hidden text-center py-16 text-dark-700">
+    <p class="text-dark-800" data-i18n="import_no_rows">Нет операций для отображения</p>
   </div>
 </div>
 
@@ -503,8 +571,8 @@ tailwind.config = {
     <input type="hidden" id="receivable-edit-id">
     <div class="space-y-3">
       <div>
-        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="rec_who">rec_who</label>
-        <input id="receivable-name" type="text" data-i18n-ph="rec_who_ph" placeholder="rec_who_ph" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="rec_who">Кто должен</label>
+        <input id="receivable-name" type="text" data-i18n-ph="rec_who_ph" placeholder="Иван Иванов" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="amount">Сумма</label>
@@ -519,7 +587,7 @@ tailwind.config = {
         </select>
       </div>
       <div>
-        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="rec_date">rec_date</label>
+        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="rec_date">Дата выдачи</label>
         <input id="receivable-date" type="date" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
       <div>
@@ -597,17 +665,21 @@ tailwind.config = {
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="payoff_strategy">Стратегия</label>
         <div class="flex gap-2">
-          <button id="payoff-strategy-snowball" onclick="setPayoffStrategy('snowball')" class="flex-1 py-2 rounded-lg text-sm font-medium border border-gold-500 bg-gold-500/10 text-gold-600" data-i18n="payoff_snowball">Снежный ком</button>
-          <button id="payoff-strategy-avalanche" onclick="setPayoffStrategy('avalanche')" class="flex-1 py-2 rounded-lg text-sm font-medium border border-dark-500 text-dark-800" data-i18n="payoff_avalanche">Лавина</button>
+          <button id="payoff-strategy-snowball" onclick="setPayoffStrategy('snowball')"
+            class="flex-1 py-2 rounded-lg text-sm font-medium border border-gold-500 bg-gold-500/10 text-gold-600" data-i18n="payoff_snowball">Снежный ком</button>
+          <button id="payoff-strategy-avalanche" onclick="setPayoffStrategy('avalanche')"
+            class="flex-1 py-2 rounded-lg text-sm font-medium border border-dark-500 text-dark-800" data-i18n="payoff_avalanche">Лавина</button>
         </div>
         <p id="payoff-strategy-hint" class="text-xs text-dark-700 mt-1" data-i18n="payoff_hint_snowball">Сначала гасим долг с наименьшим остатком — быстрее получаем психологическую победу</p>
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="payoff_extra">Доп. сумма в месяц сверх минимальных платежей</label>
-        <input id="payoff-extra" type="number" step="0.01" min="0" placeholder="0" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        <input id="payoff-extra" type="number" step="0.01" min="0" placeholder="0"
+          class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
     </div>
-    <button onclick="runPayoffCalculation()" class="w-full btn-gold rounded-lg py-2.5 text-sm font-medium mb-4 transition" data-i18n="payoff_calc">Рассчитать</button>
+    <button onclick="runPayoffCalculation()"
+      class="w-full btn-gold rounded-lg py-2.5 text-sm font-medium mb-4 transition" data-i18n="payoff_calc">Рассчитать</button>
     <div id="payoff-result" class="hidden"></div>
     <button onclick="closeModal('payoff')" class="w-full border border-dark-500 rounded-lg py-2.5 text-sm text-dark-800 hover:bg-dark-400 transition mt-3" data-i18n="close">Закрыть</button>
   </div>
@@ -656,7 +728,7 @@ tailwind.config = {
           <input id="budget-date" type="date" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
         </div>
         <div id="budget-date-monthly-wrap" class="hidden">
-          <select id="budget-day" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none"><option value="1">Каждое 1-е число</option><option value="2">Каждое 2-е число</option><option value="3">Каждое 3-е число</option><option value="4">Каждое 4-е число</option><option value="5">Каждое 5-е число</option><option value="6">Каждое 6-е число</option><option value="7">Каждое 7-е число</option><option value="8">Каждое 8-е число</option><option value="9">Каждое 9-е число</option><option value="10">Каждое 10-е число</option><option value="11">Каждое 11-е число</option><option value="12">Каждое 12-е число</option><option value="13">Каждое 13-е число</option><option value="14">Каждое 14-е число</option><option value="15">Каждое 15-е число</option><option value="16">Каждое 16-е число</option><option value="17">Каждое 17-е число</option><option value="18">Каждое 18-е число</option><option value="19">Каждое 19-е число</option><option value="20">Каждое 20-е число</option><option value="21">Каждое 21-е число</option><option value="22">Каждое 22-е число</option><option value="23">Каждое 23-е число</option><option value="24">Каждое 24-е число</option><option value="25">Каждое 25-е число</option><option value="26">Каждое 26-е число</option><option value="27">Каждое 27-е число</option><option value="28">Каждое 28-е число</option><option value="29">Каждое 29-е число</option><option value="30">Каждое 30-е число</option><option value="31">Каждое 31-е число</option></select>
+          <select id="budget-day" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none"></select>
         </div>
       </div>
       <div>
@@ -699,13 +771,13 @@ tailwind.config = {
       <h3 class="text-xs font-semibold text-dark-800 uppercase tracking-wider" data-i18n="cat_add">Добавить категорию</h3>
       <div class="flex gap-2">
         <input id="new-cat-name" type="text" data-i18n-ph="cat_name_ph" placeholder="Название категории" class="flex-1 border border-dark-500 rounded-lg px-3 py-2 text-sm bg-dark-200 text-dark-900">
-        <button onclick="addCategory()" class="btn-gold px-4 py-2 rounded-lg text-sm" data-i18n="add">+ Добавить</button>
+        <button onclick="addCategory()" class="btn-gold px-4 py-2 rounded-lg text-sm" data-i18n="add">Добавить</button>
       </div>
       <h3 class="text-xs font-semibold text-dark-800 uppercase tracking-wider mt-3" data-i18n="subcat_add">Добавить подкатегорию</h3>
       <div class="flex gap-2">
         <select id="new-subcat-parent" class="border border-dark-500 rounded-lg px-3 py-2 text-sm bg-dark-200 text-dark-900"></select>
         <input id="new-subcat-name" type="text" data-i18n-ph="subcat_ph" placeholder="Подкатегория" class="flex-1 border border-dark-500 rounded-lg px-3 py-2 text-sm bg-dark-200 text-dark-900">
-        <button onclick="addSubcategory()" class="btn-gold px-4 py-2 rounded-lg text-sm" data-i18n="add">+ Добавить</button>
+        <button onclick="addSubcategory()" class="btn-gold px-4 py-2 rounded-lg text-sm" data-i18n="add">Добавить</button>
       </div>
     </div>
 
@@ -720,7 +792,13 @@ tailwind.config = {
 // ==================== I18N ====================
 const TRANSLATIONS = {
   ru: {
-    nav_wallets:'Кошельки', nav_debts:'Долги', nav_budget:'Бюджет', nav_calc:'Калькулятор',
+    nav_wallets:'Кошельки', nav_debts:'Долги', nav_budget:'Бюджет', nav_calc:'Калькулятор', nav_import:'Импорт',
+    import_hint:'Загрузите CSV или Excel-выписку из банка — операции автоматически разобьются по категориям',
+    import_drop:'Перетащите файл или нажмите для выбора',
+    import_select_bank:'Не удалось определить банк. Выберите вручную:',
+    import_total:'Операций', import_desc:'Описание', import_skip_income:'Не импортировать доходы',
+    import_save:'Сохранить в бюджет', import_no_rows:'Нет операций для отображения',
+    import_success:'Импортировано операций:', import_already:'Уже есть в бюджете',
     auth_login_tab:'Войти', auth_register_tab:'Регистрация',
     auth_login_btn:'Войти', auth_register_btn:'Зарегистрироваться',
     auth_forgot:'Забыли пароль?', auth_confirmed:'Уже подтвердил — войти',
@@ -789,11 +867,16 @@ const TRANSLATIONS = {
     csv_wallet:'Кошелёк', csv_debt:'Долг', csv_recv:'Мне должны', csv_budget:'Бюджет',
     daily_title:'Сколько тратить в день', daily_amount:'Сумма', daily_until:'До какой даты',
     daily_days_left:'Осталось', daily_per_day:'Можно тратить в день', daily_warn:'Дата уже прошла', daily_days_until:'дней до',
-    daily_source_balance:'Доступный баланс', daily_reserved:'Будущие регулярные расходы', daily_safe_total:'Безопасно потратить', daily_after_reserve:'после резерва',
     csv_headers:'Раздел,Название,Сумма,Валюта,Дата/Тип,Категория,Подкатегория,Тег,Примечание',
   },
   en: {
-    nav_wallets:'Wallets', nav_debts:'Debts', nav_budget:'Budget', nav_calc:'Calculator',
+    nav_wallets:'Wallets', nav_debts:'Debts', nav_budget:'Budget', nav_calc:'Calculator', nav_import:'Import',
+    import_hint:'Upload a CSV or Excel bank statement — transactions will be automatically categorized',
+    import_drop:'Drag & drop a file or click to browse',
+    import_select_bank:'Could not detect bank. Select manually:',
+    import_total:'Transactions', import_desc:'Description', import_skip_income:'Skip income transactions',
+    import_save:'Save to budget', import_no_rows:'No transactions to display',
+    import_success:'Imported transactions:', import_already:'Already in budget',
     auth_login_tab:'Sign In', auth_register_tab:'Register',
     auth_login_btn:'Sign In', auth_register_btn:'Create Account',
     auth_forgot:'Forgot password?', auth_confirmed:'Already confirmed — sign in',
@@ -862,7 +945,6 @@ const TRANSLATIONS = {
     csv_wallet:'Wallet', csv_debt:'Debt', csv_recv:'Receivable', csv_budget:'Budget',
     daily_title:'Daily spending limit', daily_amount:'Amount', daily_until:'Until date',
     daily_days_left:'Left', daily_per_day:'You can spend per day', daily_warn:'Date has already passed', daily_days_until:'days until',
-    daily_source_balance:'Available balance', daily_reserved:'Upcoming recurring expenses', daily_safe_total:'Safe to spend', daily_after_reserve:'after reserve',
     csv_headers:'Section,Name,Amount,Currency,Date/Type,Category,Subcategory,Tag,Note',
   },
   de: {
@@ -935,7 +1017,6 @@ const TRANSLATIONS = {
     csv_wallet:'Konto', csv_debt:'Schuld', csv_recv:'Forderung', csv_budget:'Budget',
     daily_title:'Tagesbudget berechnen', daily_amount:'Betrag', daily_until:'Bis zum Datum',
     daily_days_left:'Noch', daily_per_day:'Pro Tag ausgeben', daily_warn:'Datum liegt in der Vergangenheit', daily_days_until:'Tage bis zum',
-    daily_source_balance:'Verfügbares Guthaben', daily_reserved:'Künftige regelmäßige Ausgaben', daily_safe_total:'Sicher verfügbar', daily_after_reserve:'nach Rücklage',
     csv_headers:'Abschnitt,Name,Betrag,Währung,Datum/Typ,Kategorie,Unterkategorie,Tag,Notiz',
   },
   fr: {
@@ -999,7 +1080,6 @@ const TRANSLATIONS = {
     csv_wallet:'Compte', csv_debt:'Dette', csv_recv:'Créance', csv_budget:'Budget',
     daily_title:'Budget journalier', daily_amount:'Montant', daily_until:"Jusqu'à la date",
     daily_days_left:'Reste', daily_per_day:'À dépenser par jour', daily_warn:'La date est déjà passée', daily_days_until:'jours jusqu\'au',
-    daily_source_balance:'Solde disponible', daily_reserved:'Dépenses récurrentes à venir', daily_safe_total:'Disponible sans risque', daily_after_reserve:'après réserve',
     csv_headers:'Section,Nom,Montant,Devise,Date/Type,Catégorie,Sous-catégorie,Étiquette,Note',
   },
   es: {
@@ -1063,7 +1143,6 @@ const TRANSLATIONS = {
     csv_wallet:'Cuenta', csv_debt:'Deuda', csv_recv:'Por cobrar', csv_budget:'Presupuesto',
     daily_title:'Presupuesto diario', daily_amount:'Importe', daily_until:'Hasta la fecha',
     daily_days_left:'Quedan', daily_per_day:'Puedes gastar al día', daily_warn:'La fecha ya pasó', daily_days_until:'días hasta el',
-    daily_source_balance:'Saldo disponible', daily_reserved:'Próximos gastos recurrentes', daily_safe_total:'Disponible con seguridad', daily_after_reserve:'después de reservar',
     csv_headers:'Sección,Nombre,Importe,Moneda,Fecha/Tipo,Categoría,Subcategoría,Etiqueta,Nota',
   },
 };
@@ -1222,6 +1301,7 @@ function showPage(name) {
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
   if (name === 'calc') initDailyCalc();
+  if (name === 'import') { importRows = []; importRawFile = null; document.getElementById('import-stats').classList.add('hidden'); document.getElementById('import-preview').classList.add('hidden'); document.getElementById('import-empty').classList.add('hidden'); document.getElementById('import-bank-selector').classList.add('hidden'); }
   requestAnimationFrame(() => {
     page.querySelectorAll('.card, .card-elevated').forEach((el, i) => {
       el.classList.remove('card-animate');
@@ -2094,45 +2174,13 @@ function renderDailySummary() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const days = Math.round((pd - today) / 86400000);
   if (days <= 0) { amountEl.textContent = '—'; metaEl.textContent = ''; return; }
-  const reserved = recurringExpensesUntil(pd);
-  const safeTotal = Math.max(0, sum - reserved);
-  amountEl.textContent = fmt(safeTotal / days, 'RUB');
+  amountEl.textContent = fmt(sum / days, 'RUB');
   const dateStr = pd.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
   const dayWord = days % 100 >= 11 && days % 100 <= 19 ? 'дней'
     : days % 10 === 1 ? 'день'
     : days % 10 >= 2 && days % 10 <= 4 ? 'дня'
     : 'дней';
-  metaEl.textContent = `${days} ${dayWord} · ${fmt(reserved, 'RUB')} ${t('daily_after_reserve')}`;
-}
-
-// Сумма регулярных расходов в RUB, которые наступят после сегодняшнего дня
-// и не позднее выбранной даты. Доходы намеренно не учитываем: расчёт должен
-// оставаться консервативным, даже если ожидаемое поступление задержится.
-function recurringExpensesUntil(targetDate) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const target = new Date(targetDate); target.setHours(0, 0, 0, 0);
-  if (target <= today) return 0;
-
-  return budgetItems
-    .filter(item => item.type === 'expense' && item.recurring && (item.currency || 'RUB') === 'RUB')
-    .reduce((total, item) => {
-      const day = Math.max(1, Math.min(31, parseInt(item.recurDay, 10) || 1));
-      const startMonth = item.startMonth || (item.date ? item.date.slice(0, 7) : null);
-      let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
-      let occurrences = 0;
-
-      while (cursor <= target) {
-        const monthKeyValue = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
-        if (!startMonth || monthKeyValue >= startMonth) {
-          const lastDay = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
-          const due = new Date(cursor.getFullYear(), cursor.getMonth(), Math.min(day, lastDay));
-          if (due > today && due <= target) occurrences++;
-        }
-        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-      }
-
-      return total + occurrences * (parseFloat(item.amount) || 0);
-    }, 0);
+  metaEl.textContent = `осталось ${days} ${dayWord} до ${dateStr}`;
 }
 
 function initDailyCalc(ns = '') {
@@ -2163,14 +2211,259 @@ function calcDaily(ns = '') {
 
   if (days <= 0) { warn.classList.remove('hidden'); return; }
 
-  const reserved = recurringExpensesUntil(target);
-  const safeTotal = Math.max(0, amount - reserved);
   document.getElementById('daily-days' + ns).textContent = days;
-  document.getElementById('daily-source-balance' + ns).textContent = fmt(amount, 'RUB');
-  document.getElementById('daily-reserved' + ns).textContent = '−' + fmt(reserved, 'RUB');
-  document.getElementById('daily-safe-total' + ns).textContent = fmt(safeTotal, 'RUB');
-  document.getElementById('daily-per-day' + ns).textContent = fmt(safeTotal / days, 'RUB');
+  document.getElementById('daily-per-day' + ns).textContent = fmt(amount / days, 'RUB');
   result.classList.remove('hidden');
+}
+
+// ==================== IMPORT ====================
+
+const IMPORT_CATEGORIES = {
+  'Продукты':       ['пятёрочка','магнит','перекрёсток','вкусвилл','ашан','лента','дикси','окей','metro','глобус','spar','атак','карусель','бахетле','fixprice','фикс прайс','авокадо','азбука','цветочный','продукты'],
+  'Рестораны':      ['mcdonalds','mcdonald','kfc','burger king','subway','вкусно и точка','шаурма','пицца','суши','кафе','ресторан','столовая','coffee','кофе','starbucks','хинкали','додо','domino','шашлык','бургер','пельмен','блин'],
+  'Доставка еды':   ['самокат','яндекс лавка','яндекславка','сбермаркет','delivery','яндекс еда','яндекседа','купер','kuper','vprok','впрок','деливери'],
+  'Транспорт':      ['яндекс такси','яндекстакси','uber','ситимобил','citymobil','метро','аэроэкспресс','rzd','ржд','аэрофлот','s7','уральские','победа','делимобиль','каршеринг','parking','парковка','азс','лукойл','газпромнефть','роснефть','shell','bp','заправка','бензин'],
+  'Здоровье':       ['аптека','farmacia','apteka','горздрав','ригла','еаптека','доктор','клиника','стоматолог','больница','медицин','здоровье','лаборатор','гемотест','инвитро'],
+  'Развлечения':    ['кино','кинотеатр','netflix','spotify','steam','билет','театр','музей','концерт','okko','иви','ivi','premier','twitch','youtube premium','apple one'],
+  'Покупки':        ['ozon','wildberries','aliexpress','lamoda','ikea','икеа','leroy','лерой','castorama','dns','mvideo','эльдорадо','citilink','ситилинк','авито','яндекс маркет','sbermegamarket'],
+  'Одежда':         ['zara','h&m','uniqlo','gloria jeans','befree','твое','твоё','остин','respect','ecco','henderson'],
+  'Связь':          ['мтс','mts','билайн','beeline','мегафон','megafon','теле2','tele2','ростелеком','yota'],
+  'ЖКХ':            ['жкх','коммунал','электроэнерги','водоканал','мосэнерго','тсж','управляющая','квартплат','газ','тепло'],
+  'Образование':    ['школа','университет','курс','обучение','skyeng','skillbox','нетология','geekbrains','яндекс практикум','stepik'],
+  'Спорт':          ['фитнес','спортзал','бассейн','gym','world class','x-fit','планета фитнес','спорт','yoga'],
+  'Красота':        ['салон','парикмахер','маникюр','барбершоп','стрижка','beauty','spa','спа','lorde','л\'этуаль','летуаль','рив гош','дрогери','магнит косметик'],
+  'Подписки':       ['apple','google play','microsoft','adobe','chatgpt','openai','telegram premium','vk музыка','яндекс плюс','яндекс музыка'],
+};
+
+function detectCategory(desc) {
+  const d = desc.toLowerCase();
+  for (const [cat, keywords] of Object.entries(IMPORT_CATEGORIES)) {
+    if (keywords.some(k => d.includes(k))) return cat;
+  }
+  return 'Прочее';
+}
+
+// Список всех категорий для <select>
+function importCategoryOptions(selected) {
+  const cats = [...Object.keys(IMPORT_CATEGORIES), 'Прочее'];
+  return cats.map(c => `<option value="${c}"${c === selected ? ' selected' : ''}>${c}</option>`).join('');
+}
+
+let importRows = []; // [{date, desc, amount, currency, type, category, checked}]
+let importRawFile = null;
+let importDetectedBank = null;
+
+function importDrop(e) {
+  e.preventDefault();
+  document.getElementById('import-dropzone').classList.remove('border-gold-500');
+  const f = e.dataTransfer.files[0];
+  if (f) importFile(f);
+}
+
+function importFile(file) {
+  if (!file) return;
+  importRawFile = file;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = e => parseImport(e.target.result, 'csv');
+    reader.readAsText(file, 'windows-1251');
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const csv = XLSX.utils.sheet_to_csv(ws, { FS: ';' });
+      parseImport(csv, 'xls');
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function parseImport(text, srcType) {
+  // Detect bank by header signature
+  const lines = text.split('\n').filter(l => l.trim());
+  const header = lines[0] || '';
+
+  let bank = null;
+  if (header.includes('Дата операции') && header.includes('Номер карты')) bank = 'tbank';
+  else if (header.includes('Дата операции') && (header.includes('Описание операции') || header.includes('Сумма в валюте счёта'))) bank = 'alfa';
+
+  if (!bank) {
+    importDetectedBank = null;
+    document.getElementById('import-bank-selector').classList.remove('hidden');
+    return;
+  }
+  importDetectedBank = bank;
+  document.getElementById('import-bank-selector').classList.add('hidden');
+  importRows = bank === 'tbank' ? parseTBank(lines) : parseAlfa(lines);
+  renderImportTable();
+}
+
+function importWithBank(bank) {
+  document.getElementById('import-bank-selector').classList.add('hidden');
+  if (!importRawFile) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').filter(l => l.trim());
+    importRows = bank === 'tbank' ? parseTBank(lines) : parseAlfa(lines);
+    renderImportTable();
+  };
+  reader.readAsText(importRawFile, 'windows-1251');
+}
+
+function splitCSV(line) {
+  // Handle semicolons, ignore quoted fields
+  return line.split(';').map(s => s.trim().replace(/^"|"$/g, ''));
+}
+
+function parseTBank(lines) {
+  // Columns: Дата операции;Дата платежа;Номер карты;Статус;Сумма операции;Валюта операции;Сумма платежа;Валюта платежа;Кешбэк;Категория;MCC;Описание;...
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitCSV(lines[i]);
+    if (cols.length < 12) continue;
+    const status = cols[3];
+    if (status && status !== 'OK' && status !== 'Выполнен') continue; // skip failed
+    const rawDate = cols[0]; // DD.MM.YYYY HH:MM:SS
+    const date = rawDate ? rawDate.slice(0, 10).split('.').reverse().join('-') : '';
+    const amount = parseFloat((cols[4] || '0').replace(',', '.'));
+    const currency = cols[5] || 'RUB';
+    const desc = cols[11] || cols[9] || '';
+    if (!date || isNaN(amount)) continue;
+    const type = amount >= 0 ? 'income' : 'expense';
+    const absAmount = Math.abs(amount);
+    rows.push({ date, desc, amount: absAmount, currency, type, category: detectCategory(desc), checked: type === 'expense' });
+  }
+  return rows;
+}
+
+function parseAlfa(lines) {
+  // Columns vary: Дата операции;Описание операции;Счёт;Сумма в валюте счёта;Валюта счёта;Сумма в валюте операции;Валюта операции;Категория;Статус
+  // or: Дата операции;Дата обработки;Описание;Сумма в рублях;Валюта;...
+  const rows = [];
+  // Find header row
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    if (lines[i].includes('Дата операции') || lines[i].includes('Описание')) { headerIdx = i; break; }
+  }
+  const header = splitCSV(lines[headerIdx]);
+  const iDate = header.findIndex(h => h.includes('Дата операции'));
+  const iDesc = header.findIndex(h => h.includes('Описание'));
+  const iAmt  = header.findIndex(h => h.includes('Сумма в рублях') || h.includes('Сумма в валюте счёта') || h.includes('Сумма'));
+  const iCur  = header.findIndex(h => h.includes('Валюта счёта') || h.includes('Валюта'));
+  const iStat = header.findIndex(h => h.includes('Статус'));
+
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const cols = splitCSV(lines[i]);
+    if (cols.length < 3) continue;
+    const status = iStat >= 0 ? cols[iStat] : '';
+    if (status && (status.includes('Отмен') || status.includes('Отклон'))) continue;
+    const rawDate = iDate >= 0 ? cols[iDate] : '';
+    // DD.MM.YYYY or YYYY-MM-DD
+    let date = '';
+    if (/^\d{2}\.\d{2}\.\d{4}/.test(rawDate)) date = rawDate.slice(0, 10).split('.').reverse().join('-');
+    else if (/^\d{4}-\d{2}-\d{2}/.test(rawDate)) date = rawDate.slice(0, 10);
+    const desc = iDesc >= 0 ? cols[iDesc] : '';
+    const rawAmt = iAmt >= 0 ? (cols[iAmt] || '0') : '0';
+    const amount = parseFloat(rawAmt.replace(/\s/g, '').replace(',', '.'));
+    const currency = iCur >= 0 ? (cols[iCur] || 'RUB') : 'RUB';
+    if (!date || isNaN(amount)) continue;
+    const type = amount >= 0 ? 'income' : 'expense';
+    const absAmount = Math.abs(amount);
+    rows.push({ date, desc, amount: absAmount, currency, type, category: detectCategory(desc), checked: type === 'expense' });
+  }
+  return rows;
+}
+
+function renderImportTable() {
+  const skipIncome = document.getElementById('import-skip-income').checked;
+  const rows = skipIncome ? importRows.filter(r => r.type === 'expense') : importRows;
+
+  const stats = document.getElementById('import-stats');
+  const preview = document.getElementById('import-preview');
+  const empty = document.getElementById('import-empty');
+
+  if (!importRows.length) { stats.classList.add('hidden'); preview.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+
+  const totalExp = importRows.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
+  const totalInc = importRows.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
+  document.getElementById('import-stat-count').textContent = rows.length;
+  document.getElementById('import-stat-exp').textContent = fmt(totalExp, 'RUB');
+  document.getElementById('import-stat-inc').textContent = fmt(totalInc, 'RUB');
+  stats.classList.remove('hidden');
+
+  if (!rows.length) { preview.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  preview.classList.remove('hidden');
+
+  const tbody = document.getElementById('import-table-body');
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr class="border-b border-dark-400 last:border-0 ${r.type === 'income' ? 'opacity-60' : ''}">
+      <td class="px-4 py-2.5"><input type="checkbox" class="w-4 h-4 accent-gold-600 import-row-check" data-idx="${i}" ${r.checked ? 'checked' : ''} onchange="importRows[getImportIdx(${i})].checked=this.checked"></td>
+      <td class="px-4 py-2.5 text-sm text-dark-800 whitespace-nowrap">${r.date}</td>
+      <td class="px-4 py-2.5 text-sm text-dark-900 max-w-[220px] truncate" title="${esc(r.desc)}">${esc(r.desc)}</td>
+      <td class="px-4 py-2.5 text-sm font-semibold text-right whitespace-nowrap ${r.type === 'income' ? 'text-success-600' : 'text-danger-600'}">${r.type === 'income' ? '+' : '−'}${fmt(r.amount, r.currency)}</td>
+      <td class="px-4 py-2.5 text-sm text-dark-700">${r.type === 'income' ? t('income') : t('expense')}</td>
+      <td class="px-4 py-2.5">
+        <select class="bg-dark-300 border border-dark-500 rounded px-2 py-1 text-xs text-dark-900 focus:border-gold-600 outline-none" onchange="importRows[getImportIdx(${i})].category=this.value">
+          ${importCategoryOptions(r.category)}
+        </select>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Map visible row index back to importRows index (accounting for income filter)
+function getImportIdx(visIdx) {
+  const skipIncome = document.getElementById('import-skip-income').checked;
+  if (!skipIncome) return visIdx;
+  const visible = importRows.map((r, i) => ({r, i})).filter(({r}) => r.type === 'expense');
+  return visible[visIdx]?.i ?? visIdx;
+}
+
+function toggleAllImport(checked) {
+  const skipIncome = document.getElementById('import-skip-income').checked;
+  importRows.forEach((r, i) => { if (!skipIncome || r.type === 'expense') r.checked = checked; });
+  document.querySelectorAll('.import-row-check').forEach(c => c.checked = checked);
+}
+
+async function saveImport() {
+  const toSave = importRows.filter(r => r.checked);
+  if (!toSave.length) { showToast('Нет выбранных операций'); return; }
+  const { data: { user } } = await sb.auth.getUser();
+
+  // Map import category → closest budget category
+  const catMap = {};
+  categories.forEach(c => { catMap[c.name] = c; });
+  const allCats = categories.map(c => c.name);
+
+  let saved = 0;
+  for (const r of toSave) {
+    // Find matching budget category or use first
+    let budgetCat = allCats.find(c => c === r.category) || allCats[0] || 'Прочее';
+    const catObj = catMap[budgetCat];
+    const subcategory = catObj?.subcategories?.[0] || null;
+
+    const row = {
+      id: uid(), user_id: user.id,
+      type: r.type,
+      category: budgetCat,
+      subcategory,
+      amount: r.amount,
+      currency: r.currency || 'RUB',
+      date: r.date,
+      note: r.desc,
+      tag: null, recurring: false, recur_day: null,
+      start_month: null
+    };
+    const err = await dbUpsert('budget_items', row);
+    if (!err) { budgetItems.push({...row, recurDay: null, startMonth: null}); saved++; }
+  }
+  showToast(`${t('import_success')} ${saved}`);
+  // Uncheck saved rows
+  importRows.forEach(r => { if (r.checked) r.checked = false; });
+  renderImportTable();
 }
 
 // ==================== AUTH ====================
@@ -2534,6 +2827,5 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 </script>
-
-
-</body><div id="codex-browser-sidebar-comments-root" style="position: fixed; inset: 0px; pointer-events: none; z-index: 2147483647;"></div></html>
+</body>
+</html>
