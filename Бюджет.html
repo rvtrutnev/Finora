@@ -227,6 +227,14 @@ tailwind.config = {
         <p class="text-sm mt-1 text-dark-700" data-i18n="wallets_empty_hint">Добавьте первый кошелёк</p>
       </div>
 
+      <!-- Savings -->
+      <div id="savings-section" class="hidden mt-8 pt-6 border-t border-dark-400">
+        <div class="flex justify-between items-center mb-5">
+          <h2 class="text-xl font-semibold gold-text tracking-wide" data-i18n="savings_title">Копилки</h2>
+        </div>
+        <div id="savings-list" class="space-y-4"></div>
+      </div>
+
       <!-- Receivables -->
       <div class="flex justify-between items-center mb-5 mt-10 pt-8 border-t border-dark-400">
         <h2 class="text-xl font-semibold gold-text tracking-wide" data-i18n="recv_title">Мне должны</h2>
@@ -547,6 +555,16 @@ tailwind.config = {
           <option value="EUR" data-i18n="cur_eur">€ — Евро</option>
         </select>
       </div>
+      <div>
+        <label class="block text-xs text-dark-700 mb-2 uppercase tracking-wider" data-i18n="wallet_type_label">Тип</label>
+        <div class="flex gap-2">
+          <button type="button" id="wallet-type-wallet" onclick="setWalletType('wallet')"
+            class="flex-1 py-2 rounded-lg text-sm font-medium border border-gold-500 bg-gold-500/10 text-gold-600 transition" data-i18n="type_wallet">Кошелёк</button>
+          <button type="button" id="wallet-type-savings" onclick="setWalletType('savings')"
+            class="flex-1 py-2 rounded-lg text-sm font-medium border border-dark-500 text-dark-800 transition" data-i18n="type_savings">Копилка</button>
+        </div>
+        <input type="hidden" id="wallet-type" value="wallet">
+      </div>
       <label class="flex items-center gap-2 cursor-pointer select-none mt-1">
         <input type="checkbox" id="wallet-exclude" class="w-4 h-4 accent-gold-600">
         <span class="text-sm text-dark-800" data-i18n="exclude_networth">Не учитывать в общем капитале</span>
@@ -824,6 +842,7 @@ const TRANSLATIONS = {
     nw_history:'Копим историю — динамика появится через пару дней',
     wallets_title:'Кошельки', wallets_empty:'Нет кошельков', wallets_empty_hint:'Добавьте первый кошелёк',
     wallet_new:'Новый кошелёк', wallet_edit:'Редактировать кошелёк', wallet_del:'Удалить кошелёк?',
+    wallet_type_label:'Тип', type_wallet:'Кошелёк', type_savings:'Копилка', savings_title:'Копилки',
     wallet_balance:'Баланс', wallet_placeholder:'Основная карта',
     recv_title:'Мне должны', recv_total:'Итого мне должны', recv_empty:'Нет записей',
     recv_new:'Мне должны', recv_edit:'Редактировать', recv_del:'Удалить запись?',
@@ -902,6 +921,7 @@ const TRANSLATIONS = {
     nw_history:'Building history — dynamics will appear in a few days',
     wallets_title:'Wallets', wallets_empty:'No wallets', wallets_empty_hint:'Add your first wallet',
     wallet_new:'New Wallet', wallet_edit:'Edit Wallet', wallet_del:'Delete wallet?',
+    wallet_type_label:'Type', type_wallet:'Wallet', type_savings:'Savings', savings_title:'Savings',
     wallet_balance:'Balance', wallet_placeholder:'Main card',
     recv_title:'Receivables', recv_total:'Total receivable', recv_empty:'No records',
     recv_new:'Receivable', recv_edit:'Edit', recv_del:'Delete record?',
@@ -1373,13 +1393,9 @@ async function saveSortOrder(table, arr) {
 }
 
 // ==================== WALLETS ====================
-function renderWallets() {
-  const list = document.getElementById('wallets-list');
-  const empty = document.getElementById('wallets-empty');
-  if (!wallets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
-  empty.classList.add('hidden');
-  list.innerHTML = wallets.map(w => `
-    <div class="card card-lift rounded-xl px-4 py-4 flex justify-between items-center ${w.exclude_from_networth ? 'opacity-60' : ''}" draggable="true" data-id="${w.id}" ondragstart="dragStart(event,'wallets')" ondragover="dragOver(event)" ondrop="dragDrop(event,'wallets')" ondragend="dragEnd(event)">
+function walletCardHTML(w, dragGroup) {
+  return `
+    <div class="card card-lift rounded-xl px-4 py-4 flex justify-between items-center ${w.exclude_from_networth ? 'opacity-60' : ''}" draggable="true" data-id="${w.id}" ondragstart="dragStart(event,'${dragGroup}')" ondragover="dragOver(event)" ondrop="dragDrop(event,'${dragGroup}')" ondragend="dragEnd(event)">
       <div class="flex items-center gap-3">
         <span class="icon-btn grip">${IC.grip}</span>
         <div>
@@ -1392,8 +1408,37 @@ function renderWallets() {
         <button onclick="editWallet('${w.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
         <button onclick="deleteWallet('${w.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+}
+
+function renderWallets() {
+  const list = document.getElementById('wallets-list');
+  const empty = document.getElementById('wallets-empty');
+  const savingsSection = document.getElementById('savings-section');
+  const savingsList = document.getElementById('savings-list');
+
+  const regular = wallets.filter(w => w.wallet_type !== 'savings');
+  const savings = wallets.filter(w => w.wallet_type === 'savings');
+
+  if (!wallets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); savingsSection.classList.add('hidden'); return; }
+  empty.classList.add('hidden');
+
+  list.innerHTML = regular.map(w => walletCardHTML(w, 'wallets')).join('');
+
+  if (savings.length) {
+    savingsSection.classList.remove('hidden');
+    savingsList.innerHTML = savings.map(w => walletCardHTML(w, 'wallets')).join('');
+  } else {
+    savingsSection.classList.add('hidden');
+  }
+}
+
+function setWalletType(type) {
+  document.getElementById('wallet-type').value = type;
+  const active = 'flex-1 py-2 rounded-lg text-sm font-medium border border-gold-500 bg-gold-500/10 text-gold-600 transition';
+  const inactive = 'flex-1 py-2 rounded-lg text-sm font-medium border border-dark-500 text-dark-800 transition';
+  document.getElementById('wallet-type-wallet').className = type === 'wallet' ? active : inactive;
+  document.getElementById('wallet-type-savings').className = type === 'savings' ? active : inactive;
 }
 
 function openWalletModal(id) {
@@ -1403,6 +1448,7 @@ function openWalletModal(id) {
   document.getElementById('wallet-currency').value = 'RUB';
   document.getElementById('wallet-exclude').checked = false;
   document.getElementById('wallet-daily').checked = false;
+  setWalletType('wallet');
   document.getElementById('wallet-modal-title').textContent = t('wallet_new');
   document.getElementById('modal-wallet').classList.remove('hidden');
 }
@@ -1416,6 +1462,7 @@ function editWallet(id) {
   document.getElementById('wallet-currency').value = w.currency;
   document.getElementById('wallet-exclude').checked = !!w.exclude_from_networth;
   document.getElementById('wallet-daily').checked = !!w.use_for_daily;
+  setWalletType(w.wallet_type || 'wallet');
   document.getElementById('wallet-modal-title').textContent = t('wallet_edit');
   document.getElementById('modal-wallet').classList.remove('hidden');
 }
@@ -1426,11 +1473,12 @@ async function saveWallet() {
   const currency = document.getElementById('wallet-currency').value;
   const exclude_from_networth = document.getElementById('wallet-exclude').checked;
   const use_for_daily = document.getElementById('wallet-daily').checked;
+  const wallet_type = document.getElementById('wallet-type').value;
   const editId = document.getElementById('wallet-edit-id').value;
   if (!name) return;
   const id = editId || uid();
   const { data: { user } } = await sb.auth.getUser();
-  const row = { id, user_id: user.id, name, balance, currency, exclude_from_networth, use_for_daily };
+  const row = { id, user_id: user.id, name, balance, currency, exclude_from_networth, use_for_daily, wallet_type };
   const err = await dbUpsert('wallets', row);
   if (err) { showToast(t('err_save') + err.message); return; }
   if (editId) { const w = wallets.find(x => x.id === editId); if (w) Object.assign(w, row); }
