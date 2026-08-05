@@ -342,21 +342,6 @@ tailwind.config = {
 
     </div>
 
-    <!-- Right: summary widgets -->
-    <div id="summary-widgets" class="w-48 shrink-0 sticky top-20 flex flex-col gap-3">
-      <div class="card rounded-xl p-4 text-center flex-1 flex flex-col justify-center">
-        <div class="section-label mb-2" data-i18n="daily_title">Сколько тратить в день</div>
-        <div id="daily-summary-amount" class="text-xl font-bold text-gold-600">—</div>
-        <div id="daily-summary-meta" class="section-label mt-1"></div>
-      </div>
-      <div class="card rounded-xl p-4 text-center flex-1 flex flex-col justify-center">
-        <div class="section-label mb-2" data-i18n="debts_title">Задолженности</div>
-        <div id="debt-summary-wrap" class="flex flex-col items-center gap-1">
-          <div class="text-dark-700 text-sm">—</div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </div>
 
@@ -1427,7 +1412,7 @@ function showPage(name) {
   page.classList.add('active');
   document.getElementById('nav-' + name).classList.add('tab-active');
   if (name === 'home') renderDashboard();
-  if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); renderDailySummary(); renderDebtSummary(); requestAnimationFrame(matchSummaryHeight); }
+  if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); }
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
   if (name === 'calc') initDailyCalc();
