@@ -269,9 +269,10 @@ tailwind.config = {
       <div class="section-label mb-3" data-i18n="nav_debts">Долговая нагрузка</div>
       <div id="dash-debt-total" class="text-2xl font-bold text-danger-600 mb-1">—</div>
       <div id="dash-debt-pct-text" class="text-xs text-dark-800 mb-3"></div>
-      <div class="w-full bg-dark-400 rounded-full h-2">
+      <div class="w-full bg-dark-400 rounded-full h-2 mb-4">
         <div id="dash-debt-bar" class="bg-danger-600 h-2 rounded-full transition-all" style="width:0%"></div>
       </div>
+      <div id="dash-debt-savings" class="space-y-3"></div>
     </div>
 
   </div>
@@ -657,6 +658,12 @@ tailwind.config = {
         </div>
         <input type="hidden" id="wallet-type" value="wallet">
       </div>
+      <div id="wallet-debt-link-row" class="hidden">
+        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="wallet_linked_debt">Привязать к долгу</label>
+        <select id="wallet-linked-debt" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+          <option value="" data-i18n="wallet_no_link">— не привязано —</option>
+        </select>
+      </div>
       <label class="flex items-center gap-2 cursor-pointer select-none mt-1">
         <input type="checkbox" id="wallet-exclude" class="w-4 h-4 accent-gold-600">
         <span class="text-sm text-dark-800" data-i18n="exclude_networth">Не учитывать в общем капитале</span>
@@ -904,6 +911,7 @@ const TRANSLATIONS = {
   ru: {
     nav_home:'Главная', nav_wallets:'Кошельки', nav_debts:'Долги', nav_budget:'Бюджет', nav_calc:'Калькулятор', nav_import:'Импорт',
     dash_upcoming:'Предстоящие платежи', dash_no_upcoming:'Нет предстоящих платежей в ближайшие 30 дней',
+    wallet_linked_debt:'Привязать к долгу', wallet_no_link:'— не привязано —',
     import_hint:'Загрузите CSV или Excel-выписку из банка — операции автоматически разобьются по категориям',
     import_drop:'Перетащите файл или нажмите для выбора',
     import_select_bank:'Не удалось определить банк. Выберите вручную:',
@@ -984,6 +992,7 @@ const TRANSLATIONS = {
   en: {
     nav_home:'Home', nav_wallets:'Wallets', nav_debts:'Debts', nav_budget:'Budget', nav_calc:'Calculator', nav_import:'Import',
     dash_upcoming:'Upcoming payments', dash_no_upcoming:'No upcoming payments in the next 30 days',
+    wallet_linked_debt:'Link to debt', wallet_no_link:'— not linked —',
     import_hint:'Upload a CSV or Excel bank statement — transactions will be automatically categorized',
     import_drop:'Drag & drop a file or click to browse',
     import_select_bank:'Could not detect bank. Select manually:',
@@ -1064,6 +1073,7 @@ const TRANSLATIONS = {
   de: {
     nav_home:'Startseite', nav_wallets:'Konten', nav_debts:'Schulden', nav_budget:'Budget', nav_calc:'Rechner',
     dash_upcoming:'Bevorstehende Zahlungen', dash_no_upcoming:'Keine bevorstehenden Zahlungen in den nächsten 30 Tagen',
+    wallet_linked_debt:'Mit Schulden verknüpfen', wallet_no_link:'— nicht verknüpft —',
     auth_login_tab:'Anmelden', auth_register_tab:'Registrieren',
     auth_login_btn:'Anmelden', auth_register_btn:'Konto erstellen',
     auth_forgot:'Passwort vergessen?', auth_confirmed:'Bereits bestätigt — anmelden',
@@ -1137,6 +1147,7 @@ const TRANSLATIONS = {
   fr: {
     nav_home:'Accueil', nav_wallets:'Comptes', nav_debts:'Dettes', nav_budget:'Budget', nav_calc:'Calculateur',
     dash_upcoming:'Paiements à venir', dash_no_upcoming:'Aucun paiement prévu dans les 30 prochains jours',
+    wallet_linked_debt:'Lier à une dette', wallet_no_link:'— non lié —',
     auth_login_tab:'Connexion', auth_register_tab:'Inscription',
     auth_login_btn:'Se connecter', auth_register_btn:'Créer un compte',
     auth_forgot:'Mot de passe oublié ?', auth_confirmed:'Déjà confirmé — se connecter',
@@ -1201,6 +1212,7 @@ const TRANSLATIONS = {
   es: {
     nav_home:'Inicio', nav_wallets:'Cuentas', nav_debts:'Deudas', nav_budget:'Presupuesto', nav_calc:'Calculadora',
     dash_upcoming:'Próximos pagos', dash_no_upcoming:'No hay pagos previstos en los próximos 30 días',
+    wallet_linked_debt:'Vincular a deuda', wallet_no_link:'— no vinculado —',
     auth_login_tab:'Iniciar sesión', auth_register_tab:'Registrarse',
     auth_login_btn:'Iniciar sesión', auth_register_btn:'Crear cuenta',
     auth_forgot:'¿Olvidaste tu contraseña?', auth_confirmed:'Ya confirmado — iniciar sesión',
@@ -1531,12 +1543,27 @@ function renderWallets() {
   }
 }
 
+function populateDebtLinkSelect(selectedId) {
+  const sel = document.getElementById('wallet-linked-debt');
+  sel.innerHTML = `<option value="">${t('wallet_no_link')}</option>`;
+  debts.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = d.name + ' (' + fmt(d.amount, d.currency) + ')';
+    if (d.id === selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
 function setWalletType(type) {
   document.getElementById('wallet-type').value = type;
   const active = 'flex-1 py-2 rounded-lg text-sm font-medium border border-gold-500 bg-gold-500/10 text-gold-600 transition';
   const inactive = 'flex-1 py-2 rounded-lg text-sm font-medium border border-dark-500 text-dark-800 transition';
   document.getElementById('wallet-type-wallet').className = type === 'wallet' ? active : inactive;
   document.getElementById('wallet-type-savings').className = type === 'savings' ? active : inactive;
+  const linkRow = document.getElementById('wallet-debt-link-row');
+  if (type === 'savings') { linkRow.classList.remove('hidden'); populateDebtLinkSelect(document.getElementById('wallet-linked-debt').value); }
+  else linkRow.classList.add('hidden');
 }
 
 function openWalletModal(id) {
@@ -1546,6 +1573,7 @@ function openWalletModal(id) {
   document.getElementById('wallet-currency').value = 'RUB';
   document.getElementById('wallet-exclude').checked = false;
   document.getElementById('wallet-daily').checked = false;
+  document.getElementById('wallet-linked-debt').value = '';
   setWalletType('wallet');
   document.getElementById('wallet-modal-title').textContent = t('wallet_new');
   document.getElementById('modal-wallet').classList.remove('hidden');
@@ -1561,6 +1589,7 @@ function editWallet(id) {
   document.getElementById('wallet-exclude').checked = !!w.exclude_from_networth;
   document.getElementById('wallet-daily').checked = !!w.use_for_daily;
   setWalletType(w.wallet_type || 'wallet');
+  if (w.wallet_type === 'savings') populateDebtLinkSelect(w.linked_debt_id || '');
   document.getElementById('wallet-modal-title').textContent = t('wallet_edit');
   document.getElementById('modal-wallet').classList.remove('hidden');
 }
@@ -1576,7 +1605,8 @@ async function saveWallet() {
   if (!name) return;
   const id = editId || uid();
   const { data: { user } } = await sb.auth.getUser();
-  const row = { id, user_id: user.id, name, balance, currency, exclude_from_networth, use_for_daily, wallet_type };
+  const linked_debt_id = wallet_type === 'savings' ? (document.getElementById('wallet-linked-debt').value || null) : null;
+  const row = { id, user_id: user.id, name, balance, currency, exclude_from_networth, use_for_daily, wallet_type, linked_debt_id };
   const err = await dbUpsert('wallets', row);
   if (err) { showToast(t('err_save') + err.message); return; }
   if (editId) { const w = wallets.find(x => x.id === editId); if (w) Object.assign(w, row); }
@@ -2927,6 +2957,35 @@ async function renderDashboard() {
   } else {
     debtPctEl.textContent = totalDebt === 0 ? 'Долгов нет' : '';
     debtBar.style.width = '0%';
+  }
+
+  // --- Debt Savings Progress ---
+  const debtSavingsEl = document.getElementById('dash-debt-savings');
+  const linkedSavings = wallets.filter(w => w.wallet_type === 'savings' && w.linked_debt_id);
+  if (linkedSavings.length === 0) {
+    debtSavingsEl.innerHTML = '';
+  } else {
+    debtSavingsEl.innerHTML = linkedSavings.map(w => {
+      const debt = debts.find(d => d.id === w.linked_debt_id);
+      if (!debt) return '';
+      const saved = parseFloat(w.balance) || 0;
+      const total = parseFloat(debt.amount) || 0;
+      const pct = total > 0 ? Math.min(100, Math.round(saved / total * 100)) : 0;
+      const barColor = pct >= 100 ? 'bg-success-600' : pct >= 50 ? 'bg-gold-500' : 'bg-gold-600';
+      return `<div>
+        <div class="flex justify-between items-baseline mb-1">
+          <span class="text-xs text-light-700 truncate max-w-[60%]">${w.name} → ${debt.name}</span>
+          <span class="text-xs font-semibold text-gold-500 flex-shrink-0 ml-2">${pct}%</span>
+        </div>
+        <div class="w-full bg-dark-400 rounded-full h-1.5 mb-1">
+          <div class="${barColor} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-dark-800">
+          <span>${fmt(saved, w.currency || 'RUB')}</span>
+          <span>${fmt(total, debt.currency || 'RUB')}</span>
+        </div>
+      </div>`;
+    }).join('');
   }
 
   // --- Upcoming Payments ---
