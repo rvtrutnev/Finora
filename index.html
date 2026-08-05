@@ -164,7 +164,10 @@ tailwind.config = {
 <nav class="bg-dark-200 border-b border-dark-400 sticky top-0 z-40">
   <div class="max-w-4xl mx-auto flex items-center">
     <img src="logo.png" alt="Finora" class="h-7 w-7 ml-3 rounded-lg flex-shrink-0">
-    <button onclick="showPage('wallets')" id="nav-wallets" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tab-active">
+    <button onclick="showPage('home')" id="nav-home" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tab-active">
+      <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="text-xs font-medium" data-i18n="nav_home">Главная</span></div>
+    </button>
+    <button onclick="showPage('wallets')" id="nav-wallets" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
       <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h2"/><path d="M2 10h20"/></svg><span class="text-xs font-medium" data-i18n="nav_wallets">Кошельки</span></div>
     </button>
     <button onclick="showPage('debts')" id="nav-debts" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200">
@@ -194,8 +197,97 @@ tailwind.config = {
   </div>
 </nav>
 
+<!-- ==================== HOME / DASHBOARD PAGE ==================== -->
+<div id="page-home" class="page active max-w-4xl mx-auto p-6">
+  <h1 class="text-xl font-bold text-light-900 mb-5" data-i18n="nav_home">Главная</h1>
+
+  <!-- Row 1: Net Worth + Daily Budget -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+
+    <!-- Net Worth widget -->
+    <div class="card card-lift gold-border p-5 flex flex-col gap-1">
+      <div class="section-label" data-i18n="nav_wallets">Чистый капитал</div>
+      <div id="dash-networth-total" class="text-3xl font-bold text-gold-500 mt-1">—</div>
+      <div class="flex gap-4 mt-1">
+        <div>
+          <div class="section-label" data-i18n="nw_assets">Активы</div>
+          <div id="dash-networth-assets" class="text-sm font-semibold text-light-700">—</div>
+        </div>
+        <div>
+          <div class="section-label" data-i18n="nw_liab">Обязательства</div>
+          <div id="dash-networth-liab" class="text-sm font-semibold text-danger-600">—</div>
+        </div>
+      </div>
+      <div id="dash-networth-delta" class="text-xs text-dark-800 mt-1"></div>
+      <div class="mt-3" style="height:60px;position:relative;">
+        <canvas id="dash-networth-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Daily Budget widget -->
+    <div class="card card-lift p-5 flex flex-col gap-1">
+      <div class="section-label" data-i18n="daily_title">Ежедневный бюджет</div>
+      <div id="dash-daily-amount" class="text-3xl font-bold text-light-900 mt-1">—</div>
+      <div id="dash-daily-meta" class="text-xs text-dark-800 mt-1"></div>
+      <div class="mt-auto pt-4">
+        <div class="flex justify-between text-xs text-dark-800 mb-1">
+          <span data-i18n="nw_assets">Доступно</span>
+          <span id="dash-daily-balance">—</span>
+        </div>
+        <div class="w-full bg-dark-400 rounded-full h-1.5">
+          <div id="dash-daily-bar" class="bg-gold-500 h-1.5 rounded-full transition-all" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Month Balance + Debt Load -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+
+    <!-- Month Balance -->
+    <div class="card card-lift p-5">
+      <div class="section-label mb-3" data-i18n="budget_month">Баланс месяца</div>
+      <div class="flex justify-between mb-3">
+        <div>
+          <div class="text-xs text-dark-800" data-i18n="budget_income">Доходы</div>
+          <div id="dash-month-income" class="text-lg font-bold text-success-600">—</div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-dark-800" data-i18n="budget_expense">Расходы</div>
+          <div id="dash-month-expense" class="text-lg font-bold text-danger-600">—</div>
+        </div>
+      </div>
+      <div class="w-full bg-dark-400 rounded-full h-2 mb-2">
+        <div id="dash-month-bar" class="h-2 rounded-full transition-all" style="width:0%"></div>
+      </div>
+      <div id="dash-month-result" class="text-sm font-semibold text-light-700"></div>
+    </div>
+
+    <!-- Debt Load -->
+    <div class="card card-lift p-5">
+      <div class="section-label mb-3" data-i18n="nav_debts">Долговая нагрузка</div>
+      <div id="dash-debt-total" class="text-2xl font-bold text-danger-600 mb-1">—</div>
+      <div id="dash-debt-pct-text" class="text-xs text-dark-800 mb-3"></div>
+      <div class="w-full bg-dark-400 rounded-full h-2">
+        <div id="dash-debt-bar" class="bg-danger-600 h-2 rounded-full transition-all" style="width:0%"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 3: Upcoming Payments -->
+  <div class="card p-5">
+    <div class="section-label mb-3" data-i18n="dash_upcoming">Предстоящие платежи</div>
+    <div id="dash-upcoming-list">
+      <div class="text-sm text-dark-800" data-i18n="dash_no_upcoming">Нет предстоящих платежей</div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ==================== WALLETS PAGE ==================== -->
-<div id="page-wallets" class="page active max-w-4xl mx-auto p-6">
+<div id="page-wallets" class="page max-w-4xl mx-auto p-6">
   <div class="flex gap-6 items-start">
 
     <!-- Main content -->
@@ -810,7 +902,8 @@ tailwind.config = {
 // ==================== I18N ====================
 const TRANSLATIONS = {
   ru: {
-    nav_wallets:'Кошельки', nav_debts:'Долги', nav_budget:'Бюджет', nav_calc:'Калькулятор', nav_import:'Импорт',
+    nav_home:'Главная', nav_wallets:'Кошельки', nav_debts:'Долги', nav_budget:'Бюджет', nav_calc:'Калькулятор', nav_import:'Импорт',
+    dash_upcoming:'Предстоящие платежи', dash_no_upcoming:'Нет предстоящих платежей в ближайшие 30 дней',
     import_hint:'Загрузите CSV или Excel-выписку из банка — операции автоматически разобьются по категориям',
     import_drop:'Перетащите файл или нажмите для выбора',
     import_select_bank:'Не удалось определить банк. Выберите вручную:',
@@ -889,7 +982,8 @@ const TRANSLATIONS = {
     csv_headers:'Раздел,Название,Сумма,Валюта,Дата/Тип,Категория,Подкатегория,Тег,Примечание',
   },
   en: {
-    nav_wallets:'Wallets', nav_debts:'Debts', nav_budget:'Budget', nav_calc:'Calculator', nav_import:'Import',
+    nav_home:'Home', nav_wallets:'Wallets', nav_debts:'Debts', nav_budget:'Budget', nav_calc:'Calculator', nav_import:'Import',
+    dash_upcoming:'Upcoming payments', dash_no_upcoming:'No upcoming payments in the next 30 days',
     import_hint:'Upload a CSV or Excel bank statement — transactions will be automatically categorized',
     import_drop:'Drag & drop a file or click to browse',
     import_select_bank:'Could not detect bank. Select manually:',
@@ -968,7 +1062,8 @@ const TRANSLATIONS = {
     csv_headers:'Section,Name,Amount,Currency,Date/Type,Category,Subcategory,Tag,Note',
   },
   de: {
-    nav_wallets:'Konten', nav_debts:'Schulden', nav_budget:'Budget', nav_calc:'Rechner',
+    nav_home:'Startseite', nav_wallets:'Konten', nav_debts:'Schulden', nav_budget:'Budget', nav_calc:'Rechner',
+    dash_upcoming:'Bevorstehende Zahlungen', dash_no_upcoming:'Keine bevorstehenden Zahlungen in den nächsten 30 Tagen',
     auth_login_tab:'Anmelden', auth_register_tab:'Registrieren',
     auth_login_btn:'Anmelden', auth_register_btn:'Konto erstellen',
     auth_forgot:'Passwort vergessen?', auth_confirmed:'Bereits bestätigt — anmelden',
@@ -1040,7 +1135,8 @@ const TRANSLATIONS = {
     csv_headers:'Abschnitt,Name,Betrag,Währung,Datum/Typ,Kategorie,Unterkategorie,Tag,Notiz',
   },
   fr: {
-    nav_wallets:'Comptes', nav_debts:'Dettes', nav_budget:'Budget', nav_calc:'Calculateur',
+    nav_home:'Accueil', nav_wallets:'Comptes', nav_debts:'Dettes', nav_budget:'Budget', nav_calc:'Calculateur',
+    dash_upcoming:'Paiements à venir', dash_no_upcoming:'Aucun paiement prévu dans les 30 prochains jours',
     auth_login_tab:'Connexion', auth_register_tab:'Inscription',
     auth_login_btn:'Se connecter', auth_register_btn:'Créer un compte',
     auth_forgot:'Mot de passe oublié ?', auth_confirmed:'Déjà confirmé — se connecter',
@@ -1103,7 +1199,8 @@ const TRANSLATIONS = {
     csv_headers:'Section,Nom,Montant,Devise,Date/Type,Catégorie,Sous-catégorie,Étiquette,Note',
   },
   es: {
-    nav_wallets:'Cuentas', nav_debts:'Deudas', nav_budget:'Presupuesto', nav_calc:'Calculadora',
+    nav_home:'Inicio', nav_wallets:'Cuentas', nav_debts:'Deudas', nav_budget:'Presupuesto', nav_calc:'Calculadora',
+    dash_upcoming:'Próximos pagos', dash_no_upcoming:'No hay pagos previstos en los próximos 30 días',
     auth_login_tab:'Iniciar sesión', auth_register_tab:'Registrarse',
     auth_login_btn:'Iniciar sesión', auth_register_btn:'Crear cuenta',
     auth_forgot:'¿Olvidaste tu contraseña?', auth_confirmed:'Ya confirmado — iniciar sesión',
@@ -1189,7 +1286,7 @@ function setLanguage(code) {
   document.getElementById('lang-menu').classList.add('hidden');
   applyTranslations();
   const activePage = document.querySelector('.page.active');
-  const activeId = (activePage?.id || 'page-wallets').replace('page-', '');
+  const activeId = (activePage?.id || 'page-home').replace('page-', '');
   showPage(activeId);
 }
 
@@ -1317,6 +1414,7 @@ function showPage(name) {
   const page = document.getElementById('page-' + name);
   page.classList.add('active');
   document.getElementById('nav-' + name).classList.add('tab-active');
+  if (name === 'home') renderDashboard();
   if (name === 'wallets') { renderWallets(); renderReceivables(); renderNetWorth(); renderDailySummary(); renderDebtSummary(); requestAnimationFrame(matchSummaryHeight); }
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
@@ -2731,6 +2829,138 @@ async function renderNetWorth() {
   });
 }
 
+// ==================== DASHBOARD ====================
+let chartDashNetWorth = null;
+
+async function renderDashboard() {
+  // --- Net Worth ---
+  const { total, assets, liabilities } = await computeNetWorth();
+  document.getElementById('dash-networth-total').textContent = fmt(total, 'RUB');
+  document.getElementById('dash-networth-assets').textContent = fmt(assets, 'RUB');
+  document.getElementById('dash-networth-liab').textContent = fmt(liabilities, 'RUB');
+
+  const { data: history } = await sb.from('net_worth_snapshots').select('*').order('snapshot_date');
+  const deltaEl = document.getElementById('dash-networth-delta');
+  if (history && history.length >= 2) {
+    const delta = total - history[0].total_rub;
+    deltaEl.textContent = (delta >= 0 ? '+' : '') + fmt(delta, 'RUB') + ' с ' + new Date(history[0].snapshot_date).toLocaleDateString('ru-RU');
+    const canvas = document.getElementById('dash-networth-chart');
+    if (chartDashNetWorth) chartDashNetWorth.destroy();
+    chartDashNetWorth = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: history.map(h => ''),
+        datasets: [{ data: history.map(h => h.total_rub), borderColor: '#d4a849', backgroundColor: '#d4a84922', fill: true, tension: 0.4, pointRadius: 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+  } else {
+    deltaEl.textContent = '';
+  }
+
+  // --- Daily Budget ---
+  const dailySum = wallets.filter(w => w.use_for_daily && w.currency === 'RUB')
+    .reduce((s, w) => s + (parseFloat(w.balance) || 0), 0);
+  const amountEl = document.getElementById('dash-daily-amount');
+  const metaEl = document.getElementById('dash-daily-meta');
+  const balEl = document.getElementById('dash-daily-balance');
+  const barEl = document.getElementById('dash-daily-bar');
+  if (dailySum > 0) {
+    const pd = nextPayday();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const days = Math.round((pd - today) / 86400000);
+    if (days > 0) {
+      amountEl.textContent = fmt(dailySum / days, 'RUB');
+      const dateStr = pd.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      const dayWord = days % 100 >= 11 && days % 100 <= 19 ? 'дней' : days % 10 === 1 ? 'день' : days % 10 >= 2 && days % 10 <= 4 ? 'дня' : 'дней';
+      metaEl.textContent = `осталось ${days} ${dayWord} до ${dateStr}`;
+      balEl.textContent = fmt(dailySum, 'RUB');
+      // progress: how far into the pay period we are (assume 15-day half-months)
+      const elapsed = Math.max(0, 15 - days);
+      const pct = Math.min(100, Math.round(elapsed / 15 * 100));
+      barEl.style.width = pct + '%';
+    } else {
+      amountEl.textContent = '—'; metaEl.textContent = ''; balEl.textContent = ''; barEl.style.width = '0%';
+    }
+  } else {
+    amountEl.textContent = '—'; metaEl.textContent = 'Не выбраны кошельки'; balEl.textContent = ''; barEl.style.width = '0%';
+  }
+
+  // --- Month Balance ---
+  const now = new Date();
+  const mk = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthItems = budgetItems.filter(b => b.recurring || (b.date && b.date.startsWith(mk)));
+  const income = monthItems.filter(b => b.type === 'income').reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  const expense = monthItems.filter(b => b.type === 'expense').reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  document.getElementById('dash-month-income').textContent = fmt(income, 'RUB');
+  document.getElementById('dash-month-expense').textContent = fmt(expense, 'RUB');
+  const balance = income - expense;
+  const resultEl = document.getElementById('dash-month-result');
+  resultEl.textContent = (balance >= 0 ? '+' : '') + fmt(balance, 'RUB');
+  resultEl.className = 'text-sm font-semibold ' + (balance >= 0 ? 'text-success-600' : 'text-danger-600');
+  const monthBar = document.getElementById('dash-month-bar');
+  if (income > 0) {
+    const pct = Math.min(100, Math.round(expense / income * 100));
+    monthBar.style.width = pct + '%';
+    monthBar.className = 'h-2 rounded-full transition-all ' + (pct > 90 ? 'bg-danger-600' : pct > 70 ? 'bg-yellow-500' : 'bg-success-600');
+  } else {
+    monthBar.style.width = expense > 0 ? '100%' : '0%';
+    monthBar.className = 'h-2 rounded-full transition-all bg-danger-600';
+  }
+
+  // --- Debt Load ---
+  const totalDebt = debts.reduce((s, d) => {
+    if ((d.currency || 'RUB') === 'RUB') return s + (parseFloat(d.amount) || 0);
+    return s; // simplified: only RUB for now
+  }, 0);
+  document.getElementById('dash-debt-total').textContent = totalDebt > 0 ? fmt(totalDebt, 'RUB') : '—';
+  const debtPctEl = document.getElementById('dash-debt-pct-text');
+  const debtBar = document.getElementById('dash-debt-bar');
+  if (totalDebt > 0 && assets > 0) {
+    const pct = Math.min(100, Math.round(totalDebt / assets * 100));
+    debtPctEl.textContent = pct + '% от активов';
+    debtBar.style.width = pct + '%';
+  } else {
+    debtPctEl.textContent = totalDebt === 0 ? 'Долгов нет' : '';
+    debtBar.style.width = '0%';
+  }
+
+  // --- Upcoming Payments ---
+  const upcomingEl = document.getElementById('dash-upcoming-list');
+  const today2 = new Date(); today2.setHours(0, 0, 0, 0);
+  const in30 = new Date(today2.getTime() + 30 * 86400000);
+  const upcoming = budgetItems.filter(b => {
+    if (!b.date) return false;
+    const d = new Date(b.date); d.setHours(0, 0, 0, 0);
+    return d >= today2 && d <= in30;
+  }).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 6);
+
+  if (upcoming.length === 0) {
+    upcomingEl.innerHTML = `<div class="text-sm text-dark-800">${t('dash_no_upcoming')}</div>`;
+  } else {
+    upcomingEl.innerHTML = upcoming.map(item => {
+      const d = new Date(item.date);
+      const daysLeft = Math.round((d - today2) / 86400000);
+      const dateLabel = daysLeft === 0 ? 'сегодня' : daysLeft === 1 ? 'завтра' : `через ${daysLeft} дн.`;
+      const isExpense = item.type === 'expense';
+      return `<div class="flex items-center justify-between py-2 border-b border-dark-400 last:border-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-2 h-2 rounded-full flex-shrink-0 ${isExpense ? 'bg-danger-600' : 'bg-success-600'}"></div>
+          <span class="text-sm text-light-700 truncate">${item.name || item.category || '—'}</span>
+        </div>
+        <div class="flex items-center gap-3 flex-shrink-0 ml-2">
+          <span class="text-xs text-dark-800">${dateLabel}</span>
+          <span class="text-sm font-semibold ${isExpense ? 'text-danger-600' : 'text-success-600'}">${isExpense ? '-' : '+'}${fmt(item.amount, item.currency || 'RUB')}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
 // ==================== DEBT PAYOFF ====================
 let currentPayoffStrategy = 'snowball';
 
@@ -2863,7 +3093,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     nav.style.display = '';
     applyTranslations();
     const activePage = document.querySelector('.page.active');
-    const activeId = (activePage?.id || 'page-wallets').replace('page-', '');
+    const activeId = (activePage?.id || 'page-home').replace('page-', '');
     showPage(activeId);
   } else {
     loading.classList.add('hidden');
