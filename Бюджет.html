@@ -894,7 +894,7 @@ const TRANSLATIONS = {
   ru: {
     nav_home:'Главная', nav_wallets:'Кошельки', nav_debts:'Долги', nav_budget:'Бюджет', nav_calc:'Калькулятор', nav_import:'Импорт',
     budget_month:'Баланс месяца',
-    dash_upcoming:'Предстоящие платежи', dash_no_upcoming:'Нет предстоящих платежей в ближайшие 30 дней',
+    dash_upcoming:'Предстоящие платежи', dash_no_upcoming:'Нет платежей в ближайшие 10 дней',
     wallet_linked_debt:'Привязать к долгу', wallet_no_link:'— не привязано —',
     import_hint:'Загрузите CSV или Excel-выписку из банка — операции автоматически разобьются по категориям',
     import_drop:'Перетащите файл или нажмите для выбора',
@@ -976,7 +976,7 @@ const TRANSLATIONS = {
   en: {
     nav_home:'Home', nav_wallets:'Wallets', nav_debts:'Debts', nav_budget:'Budget', nav_calc:'Calculator', nav_import:'Import',
     budget_month:'Month balance',
-    dash_upcoming:'Upcoming payments', dash_no_upcoming:'No upcoming payments in the next 30 days',
+    dash_upcoming:'Upcoming payments', dash_no_upcoming:'No payments in the next 10 days',
     wallet_linked_debt:'Link to debt', wallet_no_link:'— not linked —',
     import_hint:'Upload a CSV or Excel bank statement — transactions will be automatically categorized',
     import_drop:'Drag & drop a file or click to browse',
@@ -1058,7 +1058,7 @@ const TRANSLATIONS = {
   de: {
     nav_home:'Startseite', nav_wallets:'Konten', nav_debts:'Schulden', nav_budget:'Budget', nav_calc:'Rechner',
     budget_month:'Monatsbilanz',
-    dash_upcoming:'Bevorstehende Zahlungen', dash_no_upcoming:'Keine bevorstehenden Zahlungen in den nächsten 30 Tagen',
+    dash_upcoming:'Bevorstehende Zahlungen', dash_no_upcoming:'Keine Zahlungen in den nächsten 10 Tagen',
     wallet_linked_debt:'Mit Schulden verknüpfen', wallet_no_link:'— nicht verknüpft —',
     auth_login_tab:'Anmelden', auth_register_tab:'Registrieren',
     auth_login_btn:'Anmelden', auth_register_btn:'Konto erstellen',
@@ -1133,7 +1133,7 @@ const TRANSLATIONS = {
   fr: {
     nav_home:'Accueil', nav_wallets:'Comptes', nav_debts:'Dettes', nav_budget:'Budget', nav_calc:'Calculateur',
     budget_month:'Solde du mois',
-    dash_upcoming:'Paiements à venir', dash_no_upcoming:'Aucun paiement prévu dans les 30 prochains jours',
+    dash_upcoming:'Paiements à venir', dash_no_upcoming:'Aucun paiement dans les 10 prochains jours',
     wallet_linked_debt:'Lier à une dette', wallet_no_link:'— non lié —',
     auth_login_tab:'Connexion', auth_register_tab:'Inscription',
     auth_login_btn:'Se connecter', auth_register_btn:'Créer un compte',
@@ -1199,7 +1199,7 @@ const TRANSLATIONS = {
   es: {
     nav_home:'Inicio', nav_wallets:'Cuentas', nav_debts:'Deudas', nav_budget:'Presupuesto', nav_calc:'Calculadora',
     budget_month:'Balance mensual',
-    dash_upcoming:'Próximos pagos', dash_no_upcoming:'No hay pagos previstos en los próximos 30 días',
+    dash_upcoming:'Próximos pagos', dash_no_upcoming:'No hay pagos en los próximos 10 días',
     wallet_linked_debt:'Vincular a deuda', wallet_no_link:'— no vinculado —',
     auth_login_tab:'Iniciar sesión', auth_register_tab:'Registrarse',
     auth_login_btn:'Iniciar sesión', auth_register_btn:'Crear cuenta',
@@ -2979,7 +2979,7 @@ async function renderDashboard() {
   // --- Upcoming Payments ---
   const upcomingEl = document.getElementById('dash-upcoming-list');
   const today2 = new Date(); today2.setHours(0, 0, 0, 0);
-  const in30 = new Date(today2.getTime() + 30 * 86400000);
+  const in30 = new Date(today2.getTime() + 10 * 86400000);
 
   // Build list: exact-date items + recurring items projected to next occurrence
   const upcomingRaw = [];
@@ -3007,7 +3007,8 @@ async function renderDashboard() {
     upcomingEl.innerHTML = upcoming.map(item => {
       const d = new Date(item._date);
       const daysLeft = Math.round((d - today2) / 86400000);
-      const dateLabel = daysLeft === 0 ? 'сегодня' : daysLeft === 1 ? 'завтра' : `через ${daysLeft} дн.`;
+      const dateFormatted = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      const dateLabel = daysLeft === 0 ? 'сегодня' : daysLeft === 1 ? `завтра, ${dateFormatted}` : `через ${daysLeft} дн., ${dateFormatted}`;
       const isExpense = item.type === 'expense';
       return `<div class="flex items-center justify-between py-2 border-b border-dark-400 last:border-0">
         <div class="flex items-center gap-2 min-w-0">
