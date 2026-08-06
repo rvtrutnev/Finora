@@ -717,9 +717,15 @@ tailwind.config = {
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="name">Название</label>
         <input id="debt-name" type="text" data-i18n-ph="debt_ph" placeholder="Ипотека" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
       </div>
-      <div>
-        <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="amount">Сумма</label>
-        <input id="debt-amount" type="number" min="0" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="debt_original">Начальная сумма</label>
+          <input id="debt-original-amount" type="number" min="0" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="debt_remaining">Остаток</label>
+          <input id="debt-amount" type="number" min="0" step="0.01" placeholder="0.00" class="w-full border border-dark-500 rounded-lg px-3 py-2.5 text-sm bg-dark-200 text-dark-900 focus:border-gold-600 outline-none">
+        </div>
       </div>
       <div>
         <label class="block text-xs text-dark-700 mb-1 uppercase tracking-wider" data-i18n="currency">Валюта</label>
@@ -895,6 +901,7 @@ const TRANSLATIONS = {
     nav_home:'Главная', nav_wallets:'Кошельки', nav_debts:'Долги', nav_budget:'Бюджет', nav_calc:'Калькулятор', nav_import:'Импорт',
     budget_month:'Баланс месяца',
     dash_upcoming:'Предстоящие платежи', dash_no_upcoming:'Нет платежей в ближайшие 10 дней',
+    debt_original:'Начальная сумма', debt_remaining:'Остаток',
     wallet_linked_debt:'Привязать к долгу', wallet_no_link:'— не привязано —',
     import_hint:'Загрузите CSV или Excel-выписку из банка — операции автоматически разобьются по категориям',
     import_drop:'Перетащите файл или нажмите для выбора',
@@ -977,6 +984,7 @@ const TRANSLATIONS = {
     nav_home:'Home', nav_wallets:'Wallets', nav_debts:'Debts', nav_budget:'Budget', nav_calc:'Calculator', nav_import:'Import',
     budget_month:'Month balance',
     dash_upcoming:'Upcoming payments', dash_no_upcoming:'No payments in the next 10 days',
+    debt_original:'Original amount', debt_remaining:'Remaining',
     wallet_linked_debt:'Link to debt', wallet_no_link:'— not linked —',
     import_hint:'Upload a CSV or Excel bank statement — transactions will be automatically categorized',
     import_drop:'Drag & drop a file or click to browse',
@@ -1059,6 +1067,7 @@ const TRANSLATIONS = {
     nav_home:'Startseite', nav_wallets:'Konten', nav_debts:'Schulden', nav_budget:'Budget', nav_calc:'Rechner',
     budget_month:'Monatsbilanz',
     dash_upcoming:'Bevorstehende Zahlungen', dash_no_upcoming:'Keine Zahlungen in den nächsten 10 Tagen',
+    debt_original:'Ursprungsbetrag', debt_remaining:'Restbetrag',
     wallet_linked_debt:'Mit Schulden verknüpfen', wallet_no_link:'— nicht verknüpft —',
     auth_login_tab:'Anmelden', auth_register_tab:'Registrieren',
     auth_login_btn:'Anmelden', auth_register_btn:'Konto erstellen',
@@ -1134,6 +1143,7 @@ const TRANSLATIONS = {
     nav_home:'Accueil', nav_wallets:'Comptes', nav_debts:'Dettes', nav_budget:'Budget', nav_calc:'Calculateur',
     budget_month:'Solde du mois',
     dash_upcoming:'Paiements à venir', dash_no_upcoming:'Aucun paiement dans les 10 prochains jours',
+    debt_original:'Montant initial', debt_remaining:'Solde restant',
     wallet_linked_debt:'Lier à une dette', wallet_no_link:'— non lié —',
     auth_login_tab:'Connexion', auth_register_tab:'Inscription',
     auth_login_btn:'Se connecter', auth_register_btn:'Créer un compte',
@@ -1200,6 +1210,7 @@ const TRANSLATIONS = {
     nav_home:'Inicio', nav_wallets:'Cuentas', nav_debts:'Deudas', nav_budget:'Presupuesto', nav_calc:'Calculadora',
     budget_month:'Balance mensual',
     dash_upcoming:'Próximos pagos', dash_no_upcoming:'No hay pagos en los próximos 10 días',
+    debt_original:'Importe original', debt_remaining:'Saldo restante',
     wallet_linked_debt:'Vincular a deuda', wallet_no_link:'— no vinculado —',
     auth_login_tab:'Iniciar sesión', auth_register_tab:'Registrarse',
     auth_login_btn:'Iniciar sesión', auth_register_btn:'Crear cuenta',
@@ -1726,22 +1737,44 @@ function renderDebts() {
           <span class="text-xs font-semibold text-dark-800 uppercase tracking-wider">${esc(group)}</span>
           ${!mixed ? `<span class="text-sm font-bold text-danger-600">${fmt(total, currency)}</span>` : ''}
         </div>
-        ${items.map(d => `
-          <div class="px-4 py-3 flex justify-between items-center border-b border-dark-400 last:border-0" draggable="true" data-id="${d.id}" ondragstart="dragStart(event,'debts')" ondragover="dragOver(event)" ondrop="dragDrop(event,'debts')" ondragend="dragEnd(event)">
-            <div class="flex items-center gap-3">
-              <span class="icon-btn grip">${IC.grip}</span>
-              <div>
-                <div class="font-medium text-sm text-dark-900">${esc(d.name)}</div>
-                ${d.note ? `<div class="section-label">${esc(d.note)}</div>` : ''}
+        ${items.map(d => {
+          const orig = parseFloat(d.original_amount);
+          const rem = parseFloat(d.amount) || 0;
+          const hasProgress = orig > 0;
+          const paid = hasProgress ? Math.max(0, orig - rem) : 0;
+          const pct = hasProgress ? Math.min(100, Math.round(paid / orig * 100)) : 0;
+          const barColor = pct >= 100 ? 'bg-success-600' : pct >= 60 ? 'bg-gold-500' : 'bg-danger-600';
+          return `
+          <div class="px-4 py-3 border-b border-dark-400 last:border-0" draggable="true" data-id="${d.id}" ondragstart="dragStart(event,'debts')" ondragover="dragOver(event)" ondrop="dragDrop(event,'debts')" ondragend="dragEnd(event)">
+            <div class="flex justify-between items-start mb-${hasProgress ? '2' : '0'}">
+              <div class="flex items-center gap-3">
+                <span class="icon-btn grip">${IC.grip}</span>
+                <div>
+                  <div class="font-medium text-sm text-dark-900">${esc(d.name)}</div>
+                  ${d.note ? `<div class="section-label">${esc(d.note)}</div>` : ''}
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="text-right">
+                  <div class="text-lg font-bold tracking-tight text-danger-600">${fmt(rem, d.currency)}</div>
+                  ${hasProgress ? `<div class="text-xs text-dark-800">из ${fmt(orig, d.currency)}</div>` : ''}
+                </div>
+                <button onclick="editDebt('${d.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
+                <button onclick="deleteDebt('${d.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xl font-bold tracking-tight text-danger-600">${fmt(d.amount, d.currency)}</span>
-              <button onclick="editDebt('${d.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
-              <button onclick="deleteDebt('${d.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
-            </div>
-          </div>
-        `).join('')}
+            ${hasProgress ? `
+            <div class="ml-10">
+              <div class="flex justify-between text-xs text-dark-800 mb-1">
+                <span>Погашено ${fmt(paid, d.currency)}</span>
+                <span class="font-semibold ${pct >= 100 ? 'text-success-600' : 'text-gold-500'}">${pct}%</span>
+              </div>
+              <div class="w-full bg-dark-400 rounded-full h-1.5">
+                <div class="${barColor} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+              </div>
+            </div>` : ''}
+          </div>`;
+        }).join('')}
       </div>
     `;
   }).join('');
@@ -1750,6 +1783,7 @@ function renderDebts() {
 function openDebtModal() {
   document.getElementById('debt-edit-id').value = '';
   document.getElementById('debt-name').value = '';
+  document.getElementById('debt-original-amount').value = '';
   document.getElementById('debt-amount').value = '';
   document.getElementById('debt-currency').value = 'RUB';
   document.getElementById('debt-group').value = '';
@@ -1766,6 +1800,7 @@ function editDebt(id) {
   if (!d) return;
   document.getElementById('debt-edit-id').value = id;
   document.getElementById('debt-name').value = d.name;
+  document.getElementById('debt-original-amount').value = d.original_amount || '';
   document.getElementById('debt-amount').value = d.amount;
   document.getElementById('debt-currency').value = d.currency;
   document.getElementById('debt-group').value = d.group || '';
@@ -1793,6 +1828,7 @@ function renderDebtGroupSuggestions() {
 
 async function saveDebt() {
   const name = document.getElementById('debt-name').value.trim();
+  const original_amount = parseFloat(document.getElementById('debt-original-amount').value) || null;
   const amount = parseFloat(document.getElementById('debt-amount').value) || 0;
   const currency = document.getElementById('debt-currency').value;
   const group = document.getElementById('debt-group').value.trim();
@@ -1803,7 +1839,7 @@ async function saveDebt() {
   if (!name) return;
   const id = editId || uid();
   const { data: { user } } = await sb.auth.getUser();
-  const row = { id, user_id: user.id, name, amount, currency, group: group || null, interest_rate, min_payment, note: note || null };
+  const row = { id, user_id: user.id, name, original_amount, amount, currency, group: group || null, interest_rate, min_payment, note: note || null };
   const err = await dbUpsert('debts', row);
   if (err) { showToast(t('err_save') + err.message); return; }
   if (editId) { const d = debts.find(x => x.id === editId); if (d) Object.assign(d, row); }
@@ -2947,34 +2983,57 @@ async function renderDashboard() {
     debtBar.style.width = '0%';
   }
 
-  // --- Debt Savings Progress ---
+  // --- Debt Progress (original_amount) + Savings links ---
   const debtSavingsEl = document.getElementById('dash-debt-savings');
-  const linkedSavings = wallets.filter(w => w.wallet_type === 'savings' && w.linked_debt_id);
-  if (linkedSavings.length === 0) {
-    debtSavingsEl.innerHTML = '';
-  } else {
-    debtSavingsEl.innerHTML = linkedSavings.map(w => {
-      const debt = debts.find(d => d.id === w.linked_debt_id);
-      if (!debt) return '';
-      const saved = parseFloat(w.balance) || 0;
-      const total = parseFloat(debt.amount) || 0;
-      const pct = total > 0 ? Math.min(100, Math.round(saved / total * 100)) : 0;
-      const barColor = pct >= 100 ? 'bg-success-600' : pct >= 50 ? 'bg-gold-500' : 'bg-gold-600';
-      return `<div>
+  const debtRows = [];
+
+  debts.forEach(d => {
+    const orig = parseFloat(d.original_amount);
+    const rem = parseFloat(d.amount) || 0;
+    if (orig > 0) {
+      const paid = Math.max(0, orig - rem);
+      const pct = Math.min(100, Math.round(paid / orig * 100));
+      const barColor = pct >= 100 ? 'bg-success-600' : pct >= 60 ? 'bg-gold-500' : 'bg-danger-500';
+      debtRows.push(`<div>
         <div class="flex justify-between items-baseline mb-1">
-          <span class="text-xs text-light-700 truncate max-w-[60%]">${w.name} → ${debt.name}</span>
-          <span class="text-xs font-semibold text-gold-500 flex-shrink-0 ml-2">${pct}%</span>
+          <span class="text-xs text-light-700 truncate max-w-[65%]">${esc(d.name)}</span>
+          <span class="text-xs font-semibold ${pct >= 100 ? 'text-success-600' : 'text-gold-500'} flex-shrink-0 ml-2">${pct}% погашено</span>
         </div>
         <div class="w-full bg-dark-400 rounded-full h-1.5 mb-1">
           <div class="${barColor} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
         </div>
         <div class="flex justify-between text-xs text-dark-800">
-          <span>${fmt(saved, w.currency || 'RUB')}</span>
-          <span>${fmt(total, debt.currency || 'RUB')}</span>
+          <span>осталось ${fmt(rem, d.currency)}</span>
+          <span>${fmt(orig, d.currency)}</span>
         </div>
-      </div>`;
-    }).join('');
-  }
+      </div>`);
+    }
+  });
+
+  // Savings wallets linked to debts
+  wallets.filter(w => w.wallet_type === 'savings' && w.linked_debt_id).forEach(w => {
+    const debt = debts.find(d => d.id === w.linked_debt_id);
+    if (!debt) return;
+    const saved = parseFloat(w.balance) || 0;
+    const total = parseFloat(debt.amount) || 0;
+    const pct = total > 0 ? Math.min(100, Math.round(saved / total * 100)) : 0;
+    const barColor = pct >= 100 ? 'bg-success-600' : pct >= 50 ? 'bg-gold-500' : 'bg-gold-600';
+    debtRows.push(`<div>
+      <div class="flex justify-between items-baseline mb-1">
+        <span class="text-xs text-light-700 truncate max-w-[65%]">${esc(w.name)} → ${esc(debt.name)}</span>
+        <span class="text-xs font-semibold text-gold-500 flex-shrink-0 ml-2">${pct}% накоплено</span>
+      </div>
+      <div class="w-full bg-dark-400 rounded-full h-1.5 mb-1">
+        <div class="${barColor} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+      </div>
+      <div class="flex justify-between text-xs text-dark-800">
+        <span>${fmt(saved, w.currency || 'RUB')}</span>
+        <span>${fmt(total, debt.currency || 'RUB')}</span>
+      </div>
+    </div>`);
+  });
+
+  debtSavingsEl.innerHTML = debtRows.join('');
 
   // --- Upcoming Payments ---
   const upcomingEl = document.getElementById('dash-upcoming-list');
