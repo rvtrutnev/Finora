@@ -2784,7 +2784,7 @@ async function loadAllData() {
   wallets = w.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
   receivables = r.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
   debts = d.data?.map(x => ({
-    id: x.id, name: x.name, amount: x.amount, currency: x.currency || 'RUB',
+    id: x.id, name: x.name, original_amount: x.original_amount, amount: x.amount, currency: x.currency || 'RUB',
     group: x.group, note: x.note, interest_rate: x.interest_rate || 0, min_payment: x.min_payment || 0
   })) || [];
   budgetItems = b.data?.map(x => ({
