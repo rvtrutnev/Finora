@@ -203,7 +203,7 @@ tailwind.config = {
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
 
     <!-- Net Worth widget -->
-    <div class="card card-lift gold-border p-5 flex flex-col gap-1">
+    <div class="card card-lift gold-border p-5 flex flex-col gap-1 cursor-pointer" onclick="showPage('wallets')" title="Перейти к кошелькам">
       <div class="section-label" data-i18n="nw_title">Чистый капитал</div>
       <div id="dash-networth-total" class="text-3xl font-bold text-gold-500 mt-1">—</div>
       <div class="flex gap-4 mt-1">
@@ -223,7 +223,7 @@ tailwind.config = {
     </div>
 
     <!-- Daily Budget widget -->
-    <div class="card card-lift p-5 flex flex-col gap-1">
+    <div class="card card-lift p-5 flex flex-col gap-1 cursor-pointer" onclick="showPage('calc')" title="Перейти к калькулятору">
       <div class="section-label" data-i18n="daily_title">Ежедневный бюджет</div>
       <div id="dash-daily-amount" class="text-3xl font-bold text-light-900 mt-1">—</div>
       <div id="dash-daily-meta" class="text-xs text-dark-800 mt-1"></div>
@@ -244,7 +244,7 @@ tailwind.config = {
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
 
     <!-- Month Balance -->
-    <div class="card card-lift p-5">
+    <div class="card card-lift p-5 cursor-pointer" onclick="showPage('budget')" title="Перейти к бюджету">
       <div class="section-label mb-3" data-i18n="budget_month">Баланс месяца</div>
       <div class="flex justify-between mb-3">
         <div>
@@ -263,7 +263,7 @@ tailwind.config = {
     </div>
 
     <!-- Debt Load -->
-    <div class="card card-lift p-5">
+    <div class="card card-lift p-5 cursor-pointer" onclick="showPage('debts')" title="Перейти к долгам">
       <div class="section-label mb-3" data-i18n="nav_debts">Долговая нагрузка</div>
       <div id="dash-debt-total" class="text-2xl font-bold text-danger-600 mb-1">—</div>
       <div id="dash-debt-pct-text" class="text-xs text-dark-800 mb-3"></div>
@@ -276,7 +276,7 @@ tailwind.config = {
   </div>
 
   <!-- Row 3: Upcoming Payments -->
-  <div class="card p-5">
+  <div class="card p-5 cursor-pointer" onclick="showPage('budget')" title="Перейти к бюджету">
     <div class="section-label mb-3" data-i18n="dash_upcoming">Предстоящие платежи</div>
     <div id="dash-upcoming-list">
       <div class="text-sm text-dark-800" data-i18n="dash_no_upcoming">Нет предстоящих платежей</div>
