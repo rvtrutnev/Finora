@@ -2975,9 +2975,9 @@ async function renderDashboard() {
   const debtPctEl = document.getElementById('dash-debt-pct-text');
   const debtBar = document.getElementById('dash-debt-bar');
   if (totalDebt > 0 && assets > 0) {
-    const pct = Math.min(100, Math.round(totalDebt / assets * 100));
+    const pct = Math.round(totalDebt / assets * 100);
     debtPctEl.textContent = pct + '% от активов';
-    debtBar.style.width = pct + '%';
+    debtBar.style.width = Math.min(100, pct) + '%';
   } else {
     debtPctEl.textContent = totalDebt === 0 ? 'Долгов нет' : '';
     debtBar.style.width = '0%';
