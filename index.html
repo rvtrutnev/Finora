@@ -2170,7 +2170,13 @@ async function saveBudgetItem() {
     recurring: isMonthly, recur_day: recurDay, start_month: startMonth };
   const memRow = { id, type: currentBudgetType, category, subcategory, amount, currency, date, note, tag, recurring: isMonthly, recurDay, startMonth };
 
-  const err = await dbUpsert('budget_items', dbRow);
+  let err;
+  if (editId) {
+    const { error } = await sb.from('budget_items').update(dbRow).eq('id', editId).eq('user_id', user.id);
+    err = error || null;
+  } else {
+    err = await dbUpsert('budget_items', dbRow);
+  }
   if (err) { showToast(t('err_save') + err.message); return; }
   if (editId) { const item = budgetItems.find(x => x.id === editId); if (item) Object.assign(item, memRow); }
   else budgetItems.push(memRow);
