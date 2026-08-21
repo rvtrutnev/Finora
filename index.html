@@ -2153,8 +2153,9 @@ async function saveBudgetItem() {
   const date = isMonthly ? null : document.getElementById('budget-date').value;
   const recurDay = isMonthly ? parseInt(document.getElementById('budget-day').value) : null;
 
-  if (!category || !amount) return;
-  if (!isMonthly && !date) return;
+  showToast(`cat="${category}" amt=${amount} monthly=${isMonthly} date="${date}"`);
+  if (!category || !amount) { showToast('СТОП: нет категории или суммы'); return; }
+  if (!isMonthly && !date) { showToast('СТОП: нет даты'); return; }
 
   // Если введён новый тег — добавить в список
   if (tagCustom && !budgetTags.includes(tagCustom)) {
