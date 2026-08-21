@@ -2120,7 +2120,11 @@ function editBudgetItem(id) {
   if (!item) return;
   document.getElementById('budget-edit-id').value = id;
   setBudgetType(item.type);
-  document.getElementById('budget-category').value = item.category;
+  const catSel = document.getElementById('budget-category');
+  if (item.category && !Array.from(catSel.options).some(o => o.value === item.category)) {
+    catSel.innerHTML += `<option value="${esc(item.category)}">${esc(item.category)}</option>`;
+  }
+  catSel.value = item.category;
   updateSubcategories();
   document.getElementById('budget-subcategory').value = item.subcategory || '';
   document.getElementById('budget-amount').value = item.amount;
@@ -2153,9 +2157,8 @@ async function saveBudgetItem() {
   const date = isMonthly ? null : document.getElementById('budget-date').value;
   const recurDay = isMonthly ? parseInt(document.getElementById('budget-day').value) : null;
 
-  showToast(`cat="${category}" amt=${amount} monthly=${isMonthly} date="${date}"`);
-  if (!category || !amount) { showToast('СТОП: нет категории или суммы'); return; }
-  if (!isMonthly && !date) { showToast('СТОП: нет даты'); return; }
+  if (!category || !amount) return;
+  if (!isMonthly && !date) return;
 
   // Если введён новый тег — добавить в список
   if (tagCustom && !budgetTags.includes(tagCustom)) {
