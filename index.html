@@ -2130,7 +2130,7 @@ function editBudgetItem(id) {
     document.getElementById('budget-day').value = item.recurDay;
   } else {
     setDateMode('exact');
-    document.getElementById('budget-date').value = item.date;
+    document.getElementById('budget-date').value = (item.date || '').slice(0, 10);
   }
   document.getElementById('budget-note').value = item.note || '';
   populateTagSelect(item.tag);
@@ -2177,8 +2177,7 @@ async function saveBudgetItem() {
   } else {
     err = await dbUpsert('budget_items', dbRow);
   }
-  if (err) { showToast('ОШИБКА: ' + err.message); return; }
-  showToast(`DEBUG: cat=${category} amt=${amount} date=${date} editId=${editId ? editId.slice(0,6) : 'NEW'}`);
+  if (err) { showToast(t('err_save') + err.message); return; }
   if (editId) { const item = budgetItems.find(x => x.id === editId); if (item) Object.assign(item, memRow); }
   else budgetItems.push(memRow);
   closeModal('budget'); renderBudget();
