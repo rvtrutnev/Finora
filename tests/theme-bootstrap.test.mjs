@@ -49,7 +49,7 @@ test('bootstrap restores local preference without network or Supabase calls', ()
   assert.deepEqual(runBootstrap('pixel-retro').networkCalls, []);
 });
 
-function appHarness({ updateError = null, storageThrows = false } = {}) {
+function appHarness({ updateError = null, storageThrows = false, missingThemeAsset = false, initialTheme = 'classic', updateRemoteImpl } = {}) {
   const values = new Map();
   const nodes = new Map();
   const callbacks = [];
@@ -66,7 +66,7 @@ function appHarness({ updateError = null, storageThrows = false } = {}) {
   }
   const control = element('theme-toggle');
   const meta = element();
-  const root = { dataset: { theme: 'classic' } };
+  const root = { dataset: { theme: initialTheme } };
   const document = {
     documentElement: root, body: element(), addEventListener() {},
     createElement() { return element(); },
@@ -89,7 +89,11 @@ function appHarness({ updateError = null, storageThrows = false } = {}) {
   };
   const auth = {
     onAuthStateChange(callback) { callbacks.push(callback); },
-    async updateUser(payload) { writes.push(JSON.parse(JSON.stringify(payload))); return { error: updateError }; },
+    async updateUser(payload) {
+      writes.push(JSON.parse(JSON.stringify(payload)));
+      if (updateRemoteImpl) return updateRemoteImpl(payload);
+      return { error: updateError };
+    },
     async signOut() { return { error: null }; }
   };
   const sandbox = {
@@ -98,7 +102,7 @@ function appHarness({ updateError = null, storageThrows = false } = {}) {
     setTimeout(callback, delay) { timers.push({ callback, delay }); return timers.length; }, clearTimeout() {}
   };
   const context = vm.createContext(sandbox);
-  vm.runInContext(themeSource, context);
+  if (!missingThemeAsset) vm.runInContext(themeSource, context);
   const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   vm.runInContext(scripts.at(-1)[1], context, { filename: 'index.html#application' });
   // Keep the real auth callback and theme adapter; replace financial UI/data boundaries.
@@ -186,4 +190,52 @@ test('unavailable storage does not prevent application theme controls from worki
   const app = appHarness({ storageThrows: true });
   await app.run('toggleTheme()');
   assert.equal(app.root.dataset.theme, 'pixel-retro');
+});
+
+test('missing theme asset keeps Classic auth startup and application helpers usable', async () => {
+  const app = appHarness({ missingThemeAsset: true, initialTheme: 'pixel-retro' });
+  assert.equal(app.callbacks.length, 1, 'The existing auth listener must still register');
+  await app.authEvent('INITIAL_SESSION', null);
+  app.run("setLanguage('en'); showToast(t('auth_login_tab'), 'info');");
+  assert.equal(app.nodes.get('toast').textContent, 'ℹ Sign In');
+  await app.run('toggleTheme()');
+  await app.authEvent('SIGNED_IN', { user: { id: 'user-1', user_metadata: { theme: 'pixel-retro' } } });
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'classic');
+  assert.equal(app.nodes.get('theme-toggle').getAttribute('disabled'), '');
+  assert.deepEqual(app.writes, []);
+});
+
+test('queued theme intent from account A is dropped after sign-out and account B sign-in', async () => {
+  let resolveFirst;
+  let requestCount = 0;
+  const app = appHarness({ updateRemoteImpl: () => {
+    if (requestCount++ === 0) return new Promise(resolve => { resolveFirst = resolve; });
+    return { error: null };
+  } });
+  await app.authEvent('SIGNED_IN', { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'classic' } } });
+  await app.flushAuthTasks();
+  const first = app.run('toggleTheme()');
+  await Promise.resolve();
+  const second = app.run('toggleTheme()');
+  assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }], 'A first intent has been sent; second is queued');
+  await app.authEvent('SIGNED_OUT', null);
+  await app.authEvent('SIGNED_IN', { access_token: 'token-B', user: { id: 'user-B', user_metadata: { theme: 'pixel-retro' } } });
+  await app.flushAuthTasks();
+  resolveFirst({ error: null });
+  const [, dropped] = await Promise.all([first, second]);
+  assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }], 'An unsent A intent must never update B metadata');
+  assert.equal(dropped.synced, false);
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+  assert.equal(app.values.has('finora_theme_sync_pending'), false);
+});
+
+test('sign-out invalidates scheduled reconciliation even if the next login repeats the same session fingerprint', async () => {
+  const app = appHarness();
+  const session = { access_token: 'token-A', user: { id: 'user-A', user_metadata: {} } };
+  await app.authEvent('SIGNED_IN', session);
+  await app.authEvent('SIGNED_OUT', null);
+  await app.authEvent('SIGNED_IN', session);
+  await app.flushAuthTasks();
+  assert.deepEqual(app.writes, [{ data: { theme: 'classic' } }]);
 });

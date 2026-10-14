@@ -19,6 +19,8 @@
       document,
       storage,
       updateRemote,
+      // Optional stable context identity; change it when the remote session is invalidated.
+      getRemoteContext = () => undefined,
       translate = key => key,
       notify = () => {}
     } = dependencies;
@@ -90,17 +92,22 @@
       return currentTheme;
     }
 
-    function syncRemote(theme, intent) {
+    function isCurrentRemoteContext(context) {
+      return Object.is(context, getRemoteContext());
+    }
+
+    function syncRemote(theme, intent, context) {
       if (typeof updateRemote !== 'function') return Promise.resolve(false);
 
       const request = remoteQueue.then(async () => {
         try {
-          const result = await updateRemote(theme);
+          if (!isCurrentRemoteContext(context)) return false;
+          const result = await updateRemote(theme, context);
           if (result && result.error) throw result.error;
-          if (intent === remoteIntent) remove(PENDING_KEY);
+          if (intent === remoteIntent && isCurrentRemoteContext(context)) remove(PENDING_KEY);
           return true;
         } catch (_error) {
-          if (intent === remoteIntent) write(PENDING_KEY, theme);
+          if (intent === remoteIntent && isCurrentRemoteContext(context)) write(PENDING_KEY, theme);
           return false;
         }
       });
@@ -109,20 +116,22 @@
     }
 
     async function toggle() {
+      const context = getRemoteContext();
       const theme = apply(currentTheme === 'classic' ? 'pixel-retro' : 'classic', {
         persist: true,
         notify: true
       });
       const intent = ++remoteIntent;
       if (typeof updateRemote === 'function') write(PENDING_KEY, theme);
-      const synced = await syncRemote(theme, intent);
-      if (!synced && typeof updateRemote === 'function' && intent === remoteIntent) {
+      const synced = await syncRemote(theme, intent, context);
+      if (!synced && typeof updateRemote === 'function' && intent === remoteIntent && isCurrentRemoteContext(context)) {
         notify(translate('theme_sync_local_only'), 'warning');
       }
       return { theme, synced, source: 'local' };
     }
 
     async function reconcile(user) {
+      const context = getRemoteContext();
       const remoteTheme = user && user.user_metadata
         ? normalizeTheme(user.user_metadata.theme)
         : null;
@@ -147,7 +156,7 @@
 
       const intent = ++remoteIntent;
       write(PENDING_KEY, theme);
-      const synced = await syncRemote(theme, intent);
+      const synced = await syncRemote(theme, intent, context);
       return {
         theme,
         synced,

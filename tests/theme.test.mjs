@@ -8,7 +8,7 @@ const controllerSource = await readFile(
   'utf8'
 );
 
-function createHarness({ storedTheme, pendingTheme, updateRemoteImpl } = {}) {
+function createHarness({ storedTheme, pendingTheme, updateRemoteImpl, getRemoteContext } = {}) {
   const values = new Map();
   if (storedTheme !== undefined) values.set('finora_theme', storedTheme);
   if (pendingTheme !== undefined) values.set('finora_theme_sync_pending', pendingTheme);
@@ -42,9 +42,10 @@ function createHarness({ storedTheme, pendingTheme, updateRemoteImpl } = {}) {
   const controller = window.FinoraTheme.createThemeController({
     document,
     storage,
-    updateRemote: async theme => {
+    getRemoteContext,
+    updateRemote: async (theme, context) => {
       remoteCalls.push(theme);
-      if (updateRemoteImpl) return updateRemoteImpl(theme);
+      if (updateRemoteImpl) return updateRemoteImpl(theme, context);
     },
     translate: key => { translations.push(key); return `translated:${key}`; },
     notify: (message, kind) => notifications.push({ message, kind })
@@ -230,4 +231,32 @@ test('rapid toggles serialize remote writes and preserve the latest local choice
   assert.equal(harness.values.get('finora_theme'), 'classic');
   assert.equal(harness.values.has('finora_theme_sync_pending'), false);
   assert.deepEqual(harness.remoteCalls, ['pixel-retro', 'classic']);
+});
+
+test('remote context is captured at enqueue and stale intents have no remote or completion side effects', async () => {
+  let generation = 0;
+  let resolveFirst;
+  const contexts = [];
+  const harness = createHarness({
+    getRemoteContext: () => generation,
+    updateRemoteImpl: (_theme, context) => {
+      contexts.push(context);
+      if (contexts.length === 1) return new Promise(resolve => { resolveFirst = resolve; });
+    }
+  });
+  const first = harness.controller.toggle();
+  const second = harness.controller.toggle();
+  await Promise.resolve();
+  generation += 1;
+  resolveFirst();
+  await first;
+  const dropped = await second;
+  assert.equal(dropped.synced, false);
+  assert.deepEqual(contexts, [0]);
+  assert.deepEqual(harness.remoteCalls, ['pixel-retro']);
+  assert.equal(harness.values.get('finora_theme_sync_pending'), 'classic');
+  assert.equal(harness.notifications.some(notification => notification.kind === 'warning'), false);
+  await harness.controller.toggle();
+  assert.deepEqual(contexts, [0, 1]);
+  assert.deepEqual(harness.remoteCalls, ['pixel-retro', 'pixel-retro']);
 });

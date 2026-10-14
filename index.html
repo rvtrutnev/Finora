@@ -1348,7 +1348,7 @@ function applyTranslations() {
   });
   // Auth tabs & buttons need re-rendering since setAuthMode hardcodes text
   setAuthMode(authMode || 'login');
-  themeController.refreshControls();
+  themeController?.refreshControls();
 }
 
 const SUPABASE_URL = 'https://zlkgtgqdtilxbtlbigac.supabase.co';
@@ -1403,22 +1403,29 @@ function showToast(msg, type = 'error') {
 }
 
 let themeAuthUser = null;
+let themeAuthIdentity = null;
+let themeAuthGeneration = 0;
 let themeSessionKey = null;
 let themeStorage;
 try { themeStorage = window.localStorage; } catch (_error) {}
-const themeController = window.FinoraTheme.createThemeController({
+const themeController = window.FinoraTheme?.createThemeController?.({
   document,
   storage: themeStorage,
-  updateRemote: async theme => {
-    if (!themeAuthUser) throw new Error('No authenticated session');
+  getRemoteContext: () => themeAuthGeneration,
+  updateRemote: async (theme, generation) => {
+    if (!themeAuthUser || generation !== themeAuthGeneration) throw new Error('Theme intent belongs to an inactive session');
     const { error } = await sb.auth.updateUser({ data: { theme } });
     if (error) throw error;
   },
   translate: key => t(key),
   notify: (message, kind) => showToast(message, kind)
-});
-function toggleTheme() { return themeController.toggle(); }
-function reconcileTheme(user) { return themeController.reconcile(user); }
+}) || null;
+if (!themeController) {
+  document.documentElement.dataset.theme = 'classic';
+  document.getElementById('theme-toggle')?.setAttribute('disabled', '');
+}
+function toggleTheme() { return themeController?.toggle(); }
+function reconcileTheme(user) { return themeController?.reconcile(user); }
 
 async function dbUpsert(table, row) {
   const { error } = await sb.from(table).upsert(row);
@@ -3280,13 +3287,19 @@ sb.auth.onAuthStateChange(async (event, session) => {
   const nav = document.querySelector('nav');
 
   themeAuthUser = session?.user || null;
+  const authIdentity = themeAuthUser ? JSON.stringify([themeAuthUser.id, session.access_token || '']) : null;
+  if (authIdentity !== themeAuthIdentity) {
+    themeAuthIdentity = authIdentity;
+    themeAuthGeneration += 1;
+  }
   if (themeAuthUser) {
     const sessionKey = JSON.stringify([themeAuthUser.id, session.access_token || '', themeAuthUser.user_metadata?.theme || null]);
     if (sessionKey !== themeSessionKey) {
       themeSessionKey = sessionKey;
+      const generation = themeAuthGeneration;
       // Supabase auth methods must run after its callback releases the auth lock.
       setTimeout(() => {
-        if (themeAuthUser?.id === session.user.id && themeSessionKey === sessionKey) {
+        if (generation === themeAuthGeneration && themeAuthUser?.id === session.user.id && themeSessionKey === sessionKey) {
           return reconcileTheme(session.user);
         }
       }, 0);
