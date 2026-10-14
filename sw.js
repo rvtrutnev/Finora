@@ -13,12 +13,29 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+async function networkFirst(request) {
+  try {
+    return await fetch(request);
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    if (request.mode === 'navigate') {
+      const appShell = await caches.match('./index.html');
+      if (appShell) return appShell;
+    }
+
+    return new Response('Finora временно недоступна', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  }
+}
+
 self.addEventListener('fetch', e => {
   // Supabase и CDN запросы всегда через сеть
   if (e.request.url.includes('supabase.co') || e.request.url.includes('cdn.')) {
     return;
   }
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+  e.respondWith(networkFirst(e.request));
 });
