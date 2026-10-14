@@ -1,4 +1,5 @@
-const CACHE = 'finora-v1';
+const CACHE_PREFIX = 'finora-';
+const CACHE = `${CACHE_PREFIX}v2`;
 const ASSETS = ['./index.html'];
 
 self.addEventListener('install', e => {
@@ -8,7 +9,9 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    Promise.all(keys
+      .filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE)
+      .map(k => caches.delete(k)))
   ));
   self.clients.claim();
 });
@@ -33,8 +36,12 @@ async function networkFirst(request) {
 }
 
 self.addEventListener('fetch', e => {
-  // Supabase и CDN запросы всегда через сеть
-  if (e.request.url.includes('supabase.co') || e.request.url.includes('cdn.')) {
+  // Изменяющие запросы, Supabase и CDN всегда идут напрямую в сеть.
+  if (
+    e.request.method !== 'GET' ||
+    e.request.url.includes('supabase.co') ||
+    e.request.url.includes('cdn.')
+  ) {
     return;
   }
   e.respondWith(networkFirst(e.request));

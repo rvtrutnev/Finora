@@ -124,3 +124,42 @@ test('returns an explicit 503 response when network and cache are unavailable', 
   assert.equal(actual.status, 503);
   assert.match(await actual.text(), /временно недоступна/i);
 });
+
+test('does not intercept non-GET requests', async () => {
+  const worker = createWorker({
+    fetchImpl: async () => new Response('unexpected')
+  });
+  const actual = await worker.dispatchFetch(localRequest({ method: 'POST' }));
+  assert.equal(actual, null);
+});
+
+test('does not intercept Supabase or CDN requests', async () => {
+  const worker = createWorker({
+    fetchImpl: async () => new Response('unexpected')
+  });
+
+  const supabase = await worker.dispatchFetch(localRequest({
+    url: 'https://example.supabase.co/rest/v1/items'
+  }));
+  const cdn = await worker.dispatchFetch(localRequest({
+    url: 'https://cdn.example.com/library.js'
+  }));
+
+  assert.equal(supabase, null);
+  assert.equal(cdn, null);
+});
+
+test('install opens the finora-v2 cache', async () => {
+  const worker = createWorker({ fetchImpl: async () => new Response('online') });
+  await worker.dispatchLifecycle('install');
+  assert.deepEqual(worker.openedCaches, ['finora-v2']);
+});
+
+test('activation deletes only obsolete Finora caches', async () => {
+  const worker = createWorker({
+    fetchImpl: async () => new Response('online'),
+    cacheKeys: ['finora-v1', 'finora-v2', 'unrelated-cache']
+  });
+  await worker.dispatchLifecycle('activate');
+  assert.deepEqual(worker.deletedCaches, ['finora-v1']);
+});
