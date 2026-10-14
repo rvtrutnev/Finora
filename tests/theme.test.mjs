@@ -198,3 +198,29 @@ test('missing user performs no remote write', async () => {
   assertResult(result, { theme: 'pixel-retro', synced: false, source: 'local' });
   assert.deepEqual(harness.remoteCalls, []);
 });
+
+test('rapid toggles serialize remote writes and preserve the latest local choice', async () => {
+  const requests = [];
+  const harness = createHarness({
+    updateRemoteImpl: theme => new Promise((resolve, reject) => {
+      requests.push({ theme, resolve, reject });
+    })
+  });
+
+  const firstToggle = harness.controller.toggle();
+  const secondToggle = harness.controller.toggle();
+  await Promise.resolve();
+  assert.deepEqual(requests.map(request => request.theme), ['pixel-retro']);
+
+  requests[0].reject(new Error('older request failed late'));
+  await firstToggle;
+  await Promise.resolve();
+  assert.deepEqual(requests.map(request => request.theme), ['pixel-retro', 'classic']);
+  requests[1].resolve();
+  await secondToggle;
+
+  assert.equal(harness.controller.getTheme(), 'classic');
+  assert.equal(harness.values.get('finora_theme'), 'classic');
+  assert.equal(harness.values.has('finora_theme_sync_pending'), false);
+  assert.deepEqual(harness.remoteCalls, ['pixel-retro', 'classic']);
+});

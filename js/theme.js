@@ -23,6 +23,7 @@
       notify = () => {}
     } = dependencies;
     let currentTheme = normalizeTheme(read(STORAGE_KEY)) || DEFAULT_THEME;
+    let remoteQueue = Promise.resolve();
 
     function read(key) {
       try {
@@ -88,17 +89,22 @@
       return currentTheme;
     }
 
-    async function syncRemote(theme) {
-      if (typeof updateRemote !== 'function') return false;
-      try {
-        const result = await updateRemote(theme);
-        if (result && result.error) throw result.error;
-        remove(PENDING_KEY);
-        return true;
-      } catch (_error) {
-        write(PENDING_KEY, theme);
-        return false;
-      }
+    function syncRemote(theme) {
+      if (typeof updateRemote !== 'function') return Promise.resolve(false);
+
+      const request = remoteQueue.then(async () => {
+        try {
+          const result = await updateRemote(theme);
+          if (result && result.error) throw result.error;
+          remove(PENDING_KEY);
+          return true;
+        } catch (_error) {
+          write(PENDING_KEY, theme);
+          return false;
+        }
+      });
+      remoteQueue = request.then(() => undefined);
+      return request;
     }
 
     async function toggle() {
