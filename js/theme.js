@@ -24,6 +24,7 @@
     } = dependencies;
     let currentTheme = normalizeTheme(read(STORAGE_KEY)) || DEFAULT_THEME;
     let remoteQueue = Promise.resolve();
+    let remoteIntent = 0;
 
     function read(key) {
       try {
@@ -89,17 +90,17 @@
       return currentTheme;
     }
 
-    function syncRemote(theme) {
+    function syncRemote(theme, intent) {
       if (typeof updateRemote !== 'function') return Promise.resolve(false);
 
       const request = remoteQueue.then(async () => {
         try {
           const result = await updateRemote(theme);
           if (result && result.error) throw result.error;
-          remove(PENDING_KEY);
+          if (intent === remoteIntent) remove(PENDING_KEY);
           return true;
         } catch (_error) {
-          write(PENDING_KEY, theme);
+          if (intent === remoteIntent) write(PENDING_KEY, theme);
           return false;
         }
       });
@@ -112,8 +113,10 @@
         persist: true,
         notify: true
       });
-      const synced = await syncRemote(theme);
-      if (!synced && typeof updateRemote === 'function') {
+      const intent = ++remoteIntent;
+      if (typeof updateRemote === 'function') write(PENDING_KEY, theme);
+      const synced = await syncRemote(theme, intent);
+      if (!synced && typeof updateRemote === 'function' && intent === remoteIntent) {
         notify(translate('theme_sync_local_only'), 'warning');
       }
       return { theme, synced, source: 'local' };
@@ -125,6 +128,7 @@
         : null;
 
       if (remoteTheme) {
+        remoteIntent += 1;
         apply(remoteTheme, { persist: true });
         remove(PENDING_KEY);
         return { theme: remoteTheme, synced: true, source: 'remote' };
@@ -141,7 +145,9 @@
         return { theme, synced: false, source: pendingTheme ? 'pending' : 'local' };
       }
 
-      const synced = await syncRemote(theme);
+      const intent = ++remoteIntent;
+      write(PENDING_KEY, theme);
+      const synced = await syncRemote(theme, intent);
       return {
         theme,
         synced,

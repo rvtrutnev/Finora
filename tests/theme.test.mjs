@@ -216,6 +216,13 @@ test('rapid toggles serialize remote writes and preserve the latest local choice
   await firstToggle;
   await Promise.resolve();
   assert.deepEqual(requests.map(request => request.theme), ['pixel-retro', 'classic']);
+  assert.deepEqual({
+    pendingTheme: harness.values.get('finora_theme_sync_pending'),
+    staleWarning: harness.notifications.some(notification => notification.kind === 'warning')
+  }, {
+    pendingTheme: 'classic',
+    staleWarning: false
+  });
   requests[1].resolve();
   await secondToggle;
 
