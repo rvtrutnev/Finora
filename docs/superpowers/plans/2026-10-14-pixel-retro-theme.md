@@ -28,8 +28,7 @@
 - Create: `fonts/press-start-2p/PressStart2P-Regular.woff2` — locally served display font containing the official font glyph set.
 - Create: `fonts/press-start-2p/OFL.txt` — official font license.
 - Create: `tests/theme.test.mjs` — executable unit tests for the controller.
-- Create: `tests/theme-integration.test.mjs` — static integration tests for bootstrap, navigation control, translations, and Supabase wiring.
-- Create: `tests/theme-styles.test.mjs` — stylesheet contract tests for tokens, fonts, palette, component safeguards, and reduced motion.
+- Create: `tests/theme-bootstrap.test.mjs` — executable tests for the no-flash bootstrap under real success, invalid-value, and storage-failure branches.
 - Modify: `index.html` — early bootstrap, asset links, theme button, translations, controller adapter, chart refresh, and theme-aware toast classes.
 - Modify: `sw.js` — cache name and local asset manifest only.
 - Modify: `tests/service-worker.test.mjs` — capture and verify the v3 precache list and cache cleanup.
@@ -137,7 +136,7 @@ git commit -m "feat: add theme state controller"
 ### Task 2: Integrate Early Bootstrap, Navigation Control, Localization, and Supabase
 
 **Files:**
-- Create: `tests/theme-integration.test.mjs`
+- Create: `tests/theme-bootstrap.test.mjs`
 - Modify: `index.html`
 - Use: `js/theme.js`
 
@@ -149,38 +148,25 @@ git commit -m "feat: add theme state controller"
 - Adds application functions: `toggleTheme()` and `reconcileTheme(user)`.
 - Writes remote metadata through `sb.auth.updateUser({ data: { theme } })`.
 
-- [ ] **Step 1: Write failing static integration tests**
+- [ ] **Step 1: Write failing executable bootstrap tests**
 
-Read `index.html` as text and assert the presence and ordering of:
+Mark the early inline script with `id="theme-bootstrap"`. In `tests/theme-bootstrap.test.mjs`, extract that single script as the executable artifact, run it through `node:vm` with a real fake `document.documentElement.dataset` and controllable storage, and assert observable outcomes:
 
-- `data-theme="classic"` on `<html>`;
-- a synchronous bootstrap in `<head>` before visible body markup and before Tailwind initialization;
-- guarded access to `localStorage.getItem('finora_theme')`;
-- strict validation against `classic` and `pixel-retro`;
-- `styles/themes.css` and `js/theme.js` local asset references;
-- exactly one `#theme-toggle` button carrying `data-theme-toggle`;
-- `type="button"`, an initial `aria-pressed="false"`, an accessible name, and a keyboard-native `<button>` element;
-- an adapter using `sb.auth.updateUser({ data: { theme } })`;
-- reconciliation from the existing auth-session flow;
-- no new Supabase table access for theme state.
+- empty storage leaves the root in Classic;
+- a valid Pixel Retro value changes the root before body initialization;
+- an invalid value resolves to Classic;
+- a throwing storage implementation leaves Classic and does not escape an exception;
+- the bootstrap makes no network or Supabase call.
 
-Add translation-contract assertions for all five language objects (`ru`, `en`, `de`, `fr`, `es`) and these exact keys:
-
-```text
-theme_switch_pixel
-theme_switch_classic
-theme_pixel_enabled
-theme_classic_enabled
-theme_sync_local_only
-```
+Do not assert that a source string merely exists. Each test must execute the same bootstrap the browser executes and fail for a named behavior regression.
 
 - [ ] **Step 2: Run integration tests and confirm failure**
 
 ```bash
-node --test tests/theme-integration.test.mjs
+node --test tests/theme-bootstrap.test.mjs
 ```
 
-Expected: fail because the bootstrap, control, adapter, and translations are absent.
+Expected: fail because the executable bootstrap is absent.
 
 - [ ] **Step 3: Add the no-flash head bootstrap**
 
@@ -218,6 +204,8 @@ const themeController = window.FinoraTheme.createThemeController({
 
 Expose `toggleTheme()` for the markup and call `themeController.refreshControls()` after language changes so action labels switch language immediately.
 
+The required translation keys are `theme_switch_pixel`, `theme_switch_classic`, `theme_pixel_enabled`, `theme_classic_enabled`, and `theme_sync_local_only`. Verify their rendered action labels and notifications in the real browser during Task 6 rather than treating source-text presence as proof.
+
 - [ ] **Step 6: Reconcile from the existing authentication lifecycle**
 
 Call `reconcileTheme(session?.user)` only after an authenticated session is known. Ensure sign-out does not erase the local choice. Do not create a second auth listener; integrate with the current startup and `onAuthStateChange` paths and prevent duplicate remote writes for the same session event.
@@ -229,15 +217,15 @@ Replace inline hard-coded toast background colors with semantic classes or `data
 - [ ] **Step 8: Run focused and existing tests**
 
 ```bash
-node --test tests/theme.test.mjs tests/theme-integration.test.mjs tests/service-worker.test.mjs
+node --test tests/theme.test.mjs tests/theme-bootstrap.test.mjs tests/service-worker.test.mjs
 ```
 
-Expected: all tests pass; the application still parses as a static single-page file.
+Expected: all tests pass. Then load the real local page and verify that the button is keyboard-native, has one accessible name, switches the visible theme without navigation/reload, updates `aria-pressed`, and that the existing auth lifecycle performs the intended metadata call.
 
 - [ ] **Step 9: Commit Task 2**
 
 ```bash
-git add index.html tests/theme-integration.test.mjs
+git add index.html tests/theme-bootstrap.test.mjs
 git commit -m "feat: integrate theme switching and sync"
 ```
 
@@ -246,7 +234,6 @@ git commit -m "feat: integrate theme switching and sync"
 ### Task 3: Introduce Semantic Tokens while Preserving Classic
 
 **Files:**
-- Create: `tests/theme-styles.test.mjs`
 - Create: `styles/themes.css`
 - Modify: `index.html`
 
@@ -255,9 +242,9 @@ git commit -m "feat: integrate theme switching and sync"
 - Defines semantic tokens for canvas, surfaces, text, borders, actions, states, controls, focus, shadows, radii, fonts, transitions, and chart colors.
 - Maps existing Tailwind compatibility names to variables using `rgb(var(--token-rgb) / <alpha-value>)`.
 
-- [ ] **Step 1: Write failing stylesheet contract tests**
+- [ ] **Step 1: Define the computed-style verification contract**
 
-Assert that `styles/themes.css` contains both theme selectors and, at minimum, these properties:
+Use the browser's `getComputedStyle(document.documentElement)` during the visual check to verify that both themes expose usable values for:
 
 ```text
 --color-canvas
@@ -284,22 +271,18 @@ Assert that `styles/themes.css` contains both theme selectors and, at minimum, t
 --chart-grid
 ```
 
-Also assert:
+In the rendered application, also verify:
 
-- Classic declarations occur before Pixel Retro overrides;
-- `@font-face` uses local WOFF2 and `font-display: swap`;
+- toggling changes the computed palette without reloading;
+- the display font request resolves to the local WOFF2 and text remains visible during loading;
 - body/form/table font rules retain the body font;
-- focus-visible rules exist;
-- reduced-motion rules exist;
+- keyboard focus is visible;
+- reduced-motion preference removes transitions and decorative glow;
 - no animated CRT flicker keyframes exist.
 
-- [ ] **Step 2: Run style tests and confirm failure**
+- [ ] **Step 2: Capture the failing browser baseline**
 
-```bash
-node --test tests/theme-styles.test.mjs
-```
-
-Expected: fail because `styles/themes.css` does not exist.
+Before creating `styles/themes.css`, run the computed-style checks against the local page. Record that the semantic variables are empty and the theme toggle cannot alter computed theme values. This is the RED evidence for the styling integration; source-text grep is not accepted as evidence.
 
 - [ ] **Step 3: Inventory current visual constants before editing**
 
@@ -329,9 +312,9 @@ Serve the app locally and compare the current branch with the pre-theme commit `
 - [ ] **Step 7: Run tests and commit Task 3**
 
 ```bash
-node --test tests/theme-styles.test.mjs tests/theme-integration.test.mjs
+node --test tests/theme.test.mjs tests/theme-bootstrap.test.mjs
 git diff --check
-git add styles/themes.css index.html tests/theme-styles.test.mjs
+git add styles/themes.css index.html
 git commit -m "refactor: define semantic theme tokens"
 ```
 
@@ -344,7 +327,6 @@ git commit -m "refactor: define semantic theme tokens"
 - Create: `fonts/press-start-2p/OFL.txt`
 - Modify: `styles/themes.css`
 - Modify: `index.html`
-- Modify: `tests/theme-styles.test.mjs`
 
 **Interfaces:**
 - Pixel palette: canvas `#080907`, surface `#10110D`, raised/control `#171811`, text `#E9DFAC`, muted `#9B9471`, accent/positive `#22B8B0`, negative `#FF4B20`, warning `#D6A84B`, border `#827B5D`.
@@ -352,9 +334,9 @@ git commit -m "refactor: define semantic theme tokens"
 - Body font: existing Inter stack.
 - Charts read CSS variables at render time.
 
-- [ ] **Step 1: Extend failing style tests for the approved palette and rules**
+- [ ] **Step 1: Capture failing rendered checks for the approved palette and rules**
 
-Assert exact palette values, the local font URL, `font-display: swap`, display-font usage on brand/headings/key figures/buttons, body-font usage on inputs/textareas/selects/tables/modals, static scan-line rules, input/chart/modal exclusions, visible focus, and the absence of infinite animations.
+With `data-theme="pixel-retro"`, query computed styles and rendered elements in the real browser. Record the pre-implementation failures for the exact palette, display-font usage on brand/headings/key figures/buttons, body-font usage on inputs/textareas/selects/tables/modals, static scan-line treatment, input/chart/modal exclusions, visible focus, and reduced-motion behavior.
 
 - [ ] **Step 2: Acquire and verify the official font assets**
 
@@ -391,7 +373,7 @@ Replace hard-coded chart colors with values obtained from `getComputedStyle(docu
 - [ ] **Step 7: Run automated and responsive checks**
 
 ```bash
-node --test tests/theme.test.mjs tests/theme-integration.test.mjs tests/theme-styles.test.mjs
+node --test tests/theme.test.mjs tests/theme-bootstrap.test.mjs
 git diff --check
 ```
 
@@ -400,7 +382,7 @@ At 390×844 and 1440×900, inspect all available screens in both themes. Repeat 
 - [ ] **Step 8: Commit Task 4**
 
 ```bash
-git add fonts/press-start-2p styles/themes.css index.html tests/theme-styles.test.mjs
+git add fonts/press-start-2p styles/themes.css index.html
 git commit -m "feat: add pixel retro visual theme"
 ```
 
