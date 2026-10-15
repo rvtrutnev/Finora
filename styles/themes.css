@@ -246,7 +246,7 @@
   overflow-wrap: anywhere;
   min-width: 0;
 }
-[data-theme="pixel-retro"] :is(.nav-tab span, .theme-toggle-label, .section-label, .btn-gold, #auth-tab-login, #auth-tab-register, [id^="preset-"]) {
+[data-theme="pixel-retro"] :is(.nav-tab span, .theme-toggle-label, :where(#page-home, #import-stats) .section-label, .btn-gold, [id="auth-tab-login"], [id="auth-tab-register"], [id^="preset-"]) {
   font-family: var(--font-display);
   font-size: 0.5rem;
   font-weight: 400;
@@ -265,6 +265,12 @@
 }
 /* Dense summaries and user-entered names retain Inter; no blanket pixel font. */
 [data-theme="pixel-retro"] :is(.page, input, table) { font-variant-numeric: tabular-nums; }
+[data-theme="pixel-retro"] :is(table, [id^="modal-"]) .section-label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
 [data-theme="pixel-retro"] [id^="modal-"] :is(h2, h3, button) { font-family: var(--font-body); }
 [data-theme="pixel-retro"] [id^="modal-"] .btn-gold { font-size: 0.875rem; }
 [data-theme="pixel-retro"] :is(button, input, select, textarea):disabled {

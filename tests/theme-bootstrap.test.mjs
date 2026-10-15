@@ -120,16 +120,24 @@ test('bootstrap restores local preference without network or Supabase calls', ()
   assert.deepEqual(runBootstrap('pixel-retro').networkCalls, []);
 });
 
-function appHarness({ updateError = null, storageThrows = false, missingThemeAsset = false, initialTheme = 'classic', updateRemoteImpl } = {}) {
+function appHarness({ updateError = null, storageThrows = false, missingThemeAsset = false, initialTheme = 'classic', updateRemoteImpl, keepNavigation = false } = {}) {
   const values = new Map();
   const nodes = new Map();
   const callbacks = [];
   const writes = [];
   const timers = [];
+  const frames = [];
+  const observers = [];
   function element(id = '') {
     const attributes = {};
+    const classes = new Set();
+    const listeners = new Map();
     return { id, dataset: {}, style: {}, textContent: '', title: '',
-      classList: { add() {}, remove() {}, toggle() {} },
+      classList: { add(name) { classes.add(name); }, remove(name) { classes.delete(name); },
+        contains(name) { return classes.has(name); }, toggle(name) { classes.has(name) ? classes.delete(name) : classes.add(name); } },
+      addEventListener(name, callback) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(callback); },
+      removeEventListener(name, callback) { listeners.get(name)?.delete(callback); },
+      dispatchEvent(event) { for (const callback of [...(listeners.get(event.type) || [])]) callback({ ...event, currentTarget: this }); },
       setAttribute(key, value) { attributes[key] = value; },
       getAttribute(key) { return attributes[key]; },
       appendChild(node) { nodes.set(node.id, node); }
@@ -147,7 +155,11 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
       if (selector === 'nav') return nodes.get('nav');
       return null;
     },
-    querySelectorAll(selector) { return selector === '[data-theme-toggle]' ? [control] : []; }
+    querySelectorAll(selector) {
+      if (selector === '[data-theme-toggle]') return [control];
+      if (selector === '.card-animate') return [...nodes.values()].filter(node => node.classList.contains('card-animate'));
+      return [];
+    }
   };
   for (const id of ['loading-screen', 'auth-screen', 'nav', 'lang-menu']) nodes.set(id, element(id));
   for (const match of html.matchAll(/\bid="([^"]+)"/g)) {
@@ -170,6 +182,8 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   const sandbox = {
     document, localStorage: storage, window: { localStorage: storage }, navigator: {},
     supabase: { createClient() { return { auth }; } }, console, structuredClone,
+    requestAnimationFrame(callback) { frames.push(callback); },
+    MutationObserver: class { constructor(callback) { observers.push(callback); } observe() {} },
     setTimeout(callback, delay) { timers.push({ callback, delay }); return timers.length; }, clearTimeout() {}
   };
   const context = vm.createContext(sandbox);
@@ -177,10 +191,13 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   vm.runInContext(scripts.at(-1)[1], context, { filename: 'index.html#application' });
   // Keep the real auth callback and theme adapter; replace financial UI/data boundaries.
-  vm.runInContext('loadAllData = async () => {}; showPage = () => {}; setAuthMode = () => {};', context);
+  vm.runInContext('loadAllData = async () => {}; setAuthMode = () => {};', context);
+  if (!keepNavigation) vm.runInContext('showPage = () => {};', context);
   return {
     values, root, control, nodes, writes, callbacks,
     run(source) { return vm.runInContext(source, context); },
+    flushFrames() { while (frames.length) frames.shift()(); },
+    flushThemeMutation() { observers.forEach(callback => callback()); },
     async authEvent(event, session) { return callbacks[0](event, session); },
     async flushAuthTasks() {
       while (timers.some(timer => timer.delay === 0)) {
@@ -191,6 +208,56 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     }
   };
 }
+
+function navigationHarness() {
+  const app = appHarness({ keepNavigation: true });
+  app.run(`
+    globalThis.cards = [document.createElement('div'), document.createElement('div')];
+    cards.forEach((card, i) => { card.id = 'test-card-' + i; document.body.appendChild(card); });
+    const page = document.createElement('div'); page.id = 'page-test';
+    page.querySelectorAll = () => cards; document.body.appendChild(page);
+    const nav = document.createElement('button'); nav.id = 'nav-test'; document.body.appendChild(nav);
+  `);
+  return app;
+}
+
+test('Pixel navigation clears stale card animation state without waiting for animationend', () => {
+  const app = navigationHarness();
+  app.run(`
+    themeController.apply('pixel-retro');
+    cards[0].classList.add('card-animate'); cards[0].style.animationDelay = '40ms';
+    showPage('test');
+  `);
+  app.flushFrames();
+  assert.equal(app.run(`cards.some(card => card.classList.contains('card-animate') || card.style.animationDelay)`), false);
+});
+
+test('switching to Pixel cancels running and queued Classic card animations', () => {
+  const app = navigationHarness();
+  app.run(`showPage('test');`);
+  app.flushFrames();
+  assert.equal(app.run(`cards[1].classList.contains('card-animate')`), true);
+  app.run(`themeController.apply('pixel-retro');`);
+  app.flushThemeMutation();
+  assert.equal(app.run(`cards.some(card => card.classList.contains('card-animate') || card.style.animationDelay)`), false);
+  app.run(`themeController.apply('classic'); showPage('test'); themeController.apply('pixel-retro');`);
+  app.flushFrames();
+  app.flushThemeMutation();
+  app.run(`themeController.apply('classic');`);
+  app.flushThemeMutation();
+  assert.equal(app.run(`cards.some(card => card.classList.contains('card-animate') || card.style.animationDelay)`), false);
+});
+
+test('Classic navigation retains staggered animation and cleans up on animationend', () => {
+  const app = navigationHarness();
+  app.run(`showPage('test');`);
+  app.flushFrames();
+  assert.equal(app.run(`cards[0].style.animationDelay`), '0ms');
+  assert.equal(app.run(`cards[1].style.animationDelay`), '40ms');
+  assert.equal(app.run(`cards.every(card => card.classList.contains('card-animate'))`), true);
+  app.run(`cards.forEach(card => card.dispatchEvent({ type: 'animationend' }));`);
+  assert.equal(app.run(`cards.some(card => card.classList.contains('card-animate') || card.style.animationDelay)`), false);
+});
 
 test('the application toggle updates root, accessible action and Supabase metadata only', async () => {
   const app = appHarness();

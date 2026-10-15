@@ -1516,6 +1516,22 @@ function fmt(amount, currency) {
 }
 
 // ==================== NAVIGATION ====================
+function clearCardAnimation(card) {
+  card.classList.remove('card-animate');
+  card.style.animationDelay = '';
+  card.removeEventListener('animationend', finishCardAnimation);
+}
+
+function finishCardAnimation(event) {
+  clearCardAnimation(event.currentTarget);
+}
+
+function clearPixelCardAnimations() {
+  if (document.documentElement.dataset.theme === 'pixel-retro') {
+    document.querySelectorAll('.card-animate').forEach(clearCardAnimation);
+  }
+}
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active'));
@@ -1529,15 +1545,14 @@ function showPage(name) {
   if (name === 'calc') initDailyCalc();
   if (name === 'import') { importRows = []; importRawFile = null; document.getElementById('import-stats').classList.add('hidden'); document.getElementById('import-preview').classList.add('hidden'); document.getElementById('import-empty').classList.add('hidden'); document.getElementById('import-bank-selector').classList.add('hidden'); }
   requestAnimationFrame(() => {
+    clearPixelCardAnimations();
     page.querySelectorAll('.card, .card-elevated').forEach((el, i) => {
-      el.classList.remove('card-animate');
+      clearCardAnimation(el);
+      if (document.documentElement.dataset.theme === 'pixel-retro') return;
       void el.offsetWidth;
       el.style.animationDelay = `${i * 40}ms`;
       el.classList.add('card-animate');
-      el.addEventListener('animationend', () => {
-        el.classList.remove('card-animate');
-        el.style.animationDelay = '';
-      }, { once: true });
+      el.addEventListener('animationend', finishCardAnimation, { once: true });
     });
   });
 }
@@ -2029,7 +2044,10 @@ function refreshVisibleChartThemes() {
 // Covers local toggles, auth reconciliation and any future call to apply().
 // Hidden charts use the same color adapter when their existing page renderer runs.
 if (typeof MutationObserver !== 'undefined') {
-  new MutationObserver(refreshVisibleChartThemes).observe(document.documentElement, {
+  new MutationObserver(() => {
+    clearPixelCardAnimations();
+    refreshVisibleChartThemes();
+  }).observe(document.documentElement, {
     attributes: true, attributeFilter: ['data-theme']
   });
 }
