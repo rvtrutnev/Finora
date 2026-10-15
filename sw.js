@@ -1,5 +1,12 @@
-const CACHE = 'finora-v1';
-const ASSETS = ['./index.html'];
+const CACHE_PREFIX = 'finora-';
+const CACHE = `${CACHE_PREFIX}v3`;
+const ASSETS = [
+  './index.html',
+  './styles/themes.css',
+  './js/theme.js',
+  './fonts/press-start-2p/PressStart2P-Regular.woff2',
+  './fonts/press-start-2p/OFL.txt'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -8,17 +15,40 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    Promise.all(keys
+      .filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE)
+      .map(k => caches.delete(k)))
   ));
   self.clients.claim();
 });
 
+async function networkFirst(request) {
+  try {
+    return await fetch(request);
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    if (request.mode === 'navigate') {
+      const appShell = await caches.match('./index.html');
+      if (appShell) return appShell;
+    }
+
+    return new Response('Finora временно недоступна', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  }
+}
+
 self.addEventListener('fetch', e => {
-  // Supabase и CDN запросы всегда через сеть
-  if (e.request.url.includes('supabase.co') || e.request.url.includes('cdn.')) {
+  // Изменяющие запросы, Supabase и CDN всегда идут напрямую в сеть.
+  if (
+    e.request.method !== 'GET' ||
+    e.request.url.includes('supabase.co') ||
+    e.request.url.includes('cdn.')
+  ) {
     return;
   }
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+  e.respondWith(networkFirst(e.request));
 });
