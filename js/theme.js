@@ -19,6 +19,7 @@
       document,
       storage,
       updateRemote,
+      canSyncRemote = () => true,
       // Optional stable context identity; change it when the remote session is invalidated.
       getRemoteContext = () => undefined,
       translate = key => key,
@@ -125,9 +126,13 @@
         notify: true
       });
       const intent = ++remoteIntent;
-      if (typeof updateRemote === 'function') write(PENDING_KEY, theme);
+      if (typeof updateRemote !== 'function' || !canSyncRemote()) {
+        remove(PENDING_KEY);
+        return { theme, synced: false, source: 'local' };
+      }
+      write(PENDING_KEY, theme);
       const synced = await syncRemote(theme, intent, context);
-      if (!synced && typeof updateRemote === 'function' && intent === remoteIntent && isCurrentRemoteContext(context)) {
+      if (!synced && intent === remoteIntent && isCurrentRemoteContext(context)) {
         notify(translate('theme_sync_local_only'), 'warning');
       }
       return { theme, synced, source: 'local' };

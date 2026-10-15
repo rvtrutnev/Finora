@@ -144,6 +144,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     };
   }
   const control = element('theme-toggle');
+  nodes.set(control.id, control);
   const authControl = /<button\b(?=[^>]*\bid="auth-theme-toggle")(?=[^>]*\bdata-theme-toggle\b)[^>]*>/s.test(html)
     ? element('auth-theme-toggle')
     : null;
@@ -335,6 +336,57 @@ test('INITIAL_SESSION and SIGNED_IN retain normal authenticated finance startup'
   assert.deepEqual(app.showCalls, ['home']);
 });
 
+test('SIGNED_IN reconciles current theme after a USER_UPDATED metadata echo', async () => {
+  const app = appHarness();
+  const classic = { user: { id: 'user-A', user_metadata: { theme: 'classic' } } };
+  const pixel = { user: { id: 'user-A', user_metadata: { theme: 'pixel-retro' } } };
+  await app.authEvent('SIGNED_IN', classic);
+  await app.flushAuthTasks();
+  await app.authEvent('USER_UPDATED', pixel);
+  await app.authEvent('SIGNED_IN', pixel);
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+});
+
+test('SIGNED_IN reconciles theme when USER_UPDATED arrives before the first sign-in event', async () => {
+  const app = appHarness();
+  const pixel = { user: { id: 'user-B', user_metadata: { theme: 'pixel-retro' } } };
+  await app.authEvent('USER_UPDATED', pixel);
+  await app.authEvent('SIGNED_IN', pixel);
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+});
+
+test('USER_UPDATED with no session performs the complete signed-out cleanup', async () => {
+  const app = appHarness();
+  await app.authEvent('SIGNED_IN', { user: { id: 'user-A', user_metadata: { theme: 'classic' } } });
+  app.run("wallets = [{ name: 'secret' }]; receivables = [{ name: 'secret' }]; debts = [{ name: 'secret' }]; budgetItems = [{ note: 'secret' }]; categories = { expense: [{ name: 'Private' }], income: [] }; categoriesRowId = 'private-row'; budgetTags = ['Private'];");
+  app.nodes.get('nav').style.display = '';
+  const generation = app.run('themeAuthGeneration');
+  await app.authEvent('USER_UPDATED', null);
+  assert.equal(app.nodes.get('nav').style.display, 'none');
+  assert.equal(app.nodes.get('auth-screen').classList.contains('hidden'), false);
+  assert.equal(JSON.stringify(app.run('[wallets, receivables, debts, budgetItems].map(rows => rows.length)')), '[0,0,0,0]');
+  assert.notEqual(app.run('categories.expense[0].name'), 'Private');
+  assert.equal(app.run('categoriesRowId'), null);
+  assert.equal(JSON.stringify(app.run('budgetTags')), '["Москва","Казань"]');
+  assert.ok(app.run('themeAuthGeneration') > generation);
+});
+
+test('USER_UPDATED for a different user clears old data and performs a new user load', async () => {
+  const app = appHarness();
+  await app.authEvent('SIGNED_IN', { user: { id: 'user-A', user_metadata: { theme: 'classic' } } });
+  const previousLoads = app.loadCalls;
+  app.run("wallets = [{ name: 'secret' }]; receivables = [{ name: 'secret' }]; debts = [{ name: 'secret' }]; budgetItems = [{ note: 'secret' }]; categories = { expense: [{ name: 'Private' }], income: [] }; categoriesRowId = 'private-row'; budgetTags = ['Private'];");
+  await app.authEvent('USER_UPDATED', { user: { id: 'user-B', user_metadata: { theme: 'pixel-retro' } } });
+  assert.equal(app.loadCalls, previousLoads + 1);
+  assert.equal(JSON.stringify(app.run('[wallets, receivables, debts, budgetItems].map(rows => rows.length)')), '[0,0,0,0]');
+  assert.notEqual(app.run('categories.expense[0].name'), 'Private');
+  assert.equal(app.run('categoriesRowId'), null);
+  assert.equal(JSON.stringify(app.run('budgetTags')), '["Москва","Казань"]');
+  assert.equal(app.nodes.get('nav').style.display, '');
+});
+
 test('all five languages refresh the action label and theme notification', async () => {
   const app = appHarness();
   await app.authEvent('SIGNED_IN', { user: { id: 'user-1', user_metadata: { theme: 'classic' } } });
@@ -404,6 +456,18 @@ test('missing theme asset keeps Classic auth startup and application helpers usa
   await app.flushAuthTasks();
   assert.equal(app.root.dataset.theme, 'classic');
   assert.equal(app.nodes.get('theme-toggle').getAttribute('disabled'), '');
+  assert.equal(app.nodes.get('auth-theme-toggle').getAttribute('disabled'), '');
+  assert.deepEqual(app.writes, []);
+});
+
+test('guest theme toggle is local-only and reports success without pending sync state', async () => {
+  const app = appHarness();
+  await app.authEvent('INITIAL_SESSION', null);
+  await app.run('toggleTheme()');
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+  assert.equal(app.values.get('finora_theme'), 'pixel-retro');
+  assert.equal(app.values.has('finora_theme_sync_pending'), false);
+  assert.equal(app.nodes.get('toast').dataset.kind, 'success');
   assert.deepEqual(app.writes, []);
 });
 

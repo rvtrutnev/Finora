@@ -1446,6 +1446,7 @@ const themeController = window.FinoraTheme?.createThemeController?.({
   document,
   storage: themeStorage,
   getRemoteContext: () => themeAuthGeneration,
+  canSyncRemote: () => !!themeAuthUser,
   updateRemote: async (theme, generation) => {
     if (!themeAuthUser || generation !== themeAuthGeneration) throw new Error('Theme intent belongs to an inactive session');
     const { error } = await sb.auth.updateUser({ data: { theme } });
@@ -1456,10 +1457,17 @@ const themeController = window.FinoraTheme?.createThemeController?.({
 }) || null;
 if (!themeController) {
   document.documentElement.dataset.theme = 'classic';
-  document.getElementById('theme-toggle')?.setAttribute('disabled', '');
+  document.querySelectorAll('[data-theme-toggle]').forEach(control => control.setAttribute('disabled', ''));
 }
 function toggleTheme() { return themeController?.toggle(); }
 function reconcileTheme(user) { return themeController?.reconcile(user); }
+
+function resetAccountData() {
+  wallets = []; receivables = []; debts = []; budgetItems = [];
+  categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+  categoriesRowId = null;
+  budgetTags = ['Москва', 'Казань'];
+}
 
 async function dbUpsert(table, row) {
   const { error } = await sb.from(table).upsert(row);
@@ -3403,32 +3411,39 @@ sb.auth.onAuthStateChange(async (event, session) => {
   const authScreen = document.getElementById('auth-screen');
   const nav = document.querySelector('nav');
 
+  const previousAuthIdentity = themeAuthIdentity;
   themeAuthUser = session?.user || null;
   const authIdentity = themeAuthUser ? String(themeAuthUser.id) : null;
-  if (authIdentity !== themeAuthIdentity) {
+  const authIdentityChanged = authIdentity !== previousAuthIdentity;
+  if (authIdentityChanged) {
     themeAuthIdentity = authIdentity;
     themeAuthGeneration += 1;
+    themeSessionKey = null;
   }
   if (themeAuthUser) {
     const sessionKey = JSON.stringify([themeAuthUser.id, themeAuthUser.user_metadata?.theme || null]);
-    if (sessionKey !== themeSessionKey) {
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && sessionKey !== themeSessionKey) {
       themeSessionKey = sessionKey;
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-        const generation = themeAuthGeneration;
-        // Supabase auth methods must run after its callback releases the auth lock.
-        setTimeout(() => {
-          if (generation === themeAuthGeneration && themeAuthUser?.id === session.user.id && themeSessionKey === sessionKey) {
-            return reconcileTheme(session.user);
-          }
-        }, 0);
-      }
+      const generation = themeAuthGeneration;
+      // Supabase auth methods must run after its callback releases the auth lock.
+      setTimeout(() => {
+        if (generation === themeAuthGeneration && themeAuthUser?.id === session.user.id && themeSessionKey === sessionKey) {
+          return reconcileTheme(session.user);
+        }
+      }, 0);
     }
-  } else {
+  } else if (!authIdentityChanged) {
     themeSessionKey = null;
   }
 
   // Metadata echoes and token renewal keep the same financial UI and theme intent.
-  if (event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') return;
+  if ((event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') && authIdentity && !authIdentityChanged) return;
+
+  if (session && authIdentityChanged) {
+    resetAccountData();
+    loading.classList.remove('hidden');
+    nav.style.display = 'none';
+  }
 
   if (session) {
     authScreen.classList.add('hidden');
@@ -3444,8 +3459,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     nav.style.display = 'none';
     authScreen.classList.remove('hidden');
     applyTranslations();
-    wallets = []; receivables = []; debts = []; budgetItems = [];
-    categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    resetAccountData();
   }
 });
 </script>
