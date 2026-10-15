@@ -32,6 +32,77 @@ function runBootstrap(stored, { throws = false } = {}) {
 test('empty storage leaves Classic before body initialization', () => {
   assert.equal(runBootstrap(null).theme, 'classic');
 });
+
+test('chart rendering preserves Classic colors and switches only visible chart presentation', () => {
+  const app = appHarness();
+  app.run(`
+    globalThis.chartTokens = {};
+    globalThis.getComputedStyle = () => ({ getPropertyValue: name => chartTokens[name] || '' });
+    globalThis.Chart = function(canvas, config) {
+      this.canvas = canvas; this.config = config; this.data = config.data;
+      this.options = config.options; this.updates = [];
+      this.update = mode => this.updates.push(mode);
+      this.destroy = () => {};
+    };
+    globalThis.visibleCanvas = { closest: () => ({}) };
+    globalThis.hiddenCanvas = { closest: () => null };
+    globalThis.lineConfig = { type: 'line', data: { datasets: [{ data: [100, 250], tension: 0.3 }] },
+      options: { plugins: { legend: { display: false } }, scales: { x: { display: false } } } };
+    chartNetWorth = createThemedChart(visibleCanvas, lineConfig);
+    chartDashNetWorth = createThemedChart(hiddenCanvas, structuredClone(lineConfig));
+  `);
+  assert.equal(app.run('chartNetWorth.data.datasets[0].borderColor'), '#d4a849');
+  assert.equal(app.run('chartNetWorth.data.datasets[0].backgroundColor'), '#d4a84922');
+  app.run(`
+    globalThis.originalData = chartNetWorth.data.datasets[0].data;
+    document.documentElement.dataset.theme = 'pixel-retro';
+    chartTokens = { '--chart-primary': '#22b8b0', '--chart-primary-fill': '#22b8b022',
+      '--chart-tooltip-background': '#171811', '--chart-tooltip-text': '#e9dfac',
+      '--font-body': 'Inter, sans-serif' };
+    refreshVisibleChartThemes();
+  `);
+  assert.equal(app.run('chartNetWorth.data.datasets[0].borderColor'), '#22b8b0');
+  assert.equal(app.run('chartNetWorth.data.datasets[0].data === originalData'), true);
+  assert.equal(app.run('chartNetWorth.data.datasets[0].tension'), 0.3);
+  assert.equal(app.run('chartNetWorth.updates.join()'), 'none');
+  assert.equal(app.run('chartDashNetWorth.updates.length'), 0);
+  assert.equal(app.run('chartNetWorth.options.plugins.tooltip.bodyColor'), '#e9dfac');
+  app.run(`document.documentElement.dataset.theme = 'classic'; chartTokens = {}; refreshVisibleChartThemes();`);
+  assert.equal(app.run('chartNetWorth.data.datasets[0].borderColor'), '#d4a849');
+  assert.equal(app.run('chartNetWorth.options.plugins.tooltip.bodyFont'), undefined);
+  app.run(`
+    currentMonth = new Date(2026, 9, 1);
+    budgetItems = [
+      { type: 'income', amount: 500, date: '2026-10-01' },
+      { type: 'expense', amount: 25, date: '2026-10-02', category: 'Food' },
+      { type: 'expense', amount: 15, date: '2026-10-03', category: 'Food' },
+      { type: 'expense', amount: 10, date: '2026-10-03', category: 'Travel' }
+    ];
+    renderCharts(budgetItems);
+  `);
+  assert.equal(app.run('chartDonut.data.datasets[0].data.join()'), '40,10');
+  assert.equal(app.run('chartDonut.data.datasets[0].backgroundColor.join()'), '#d4a849,#3b82f6,#e74c3c,#1a9a5c,#a855f7,#f97316,#06b6d4,#ec4899,#84cc16,#f59e0b,#6366f1,#14b8a6');
+  assert.equal(app.run('chartBar.data.datasets[0].data.join()'), '0,0,0,0,0,500');
+  assert.equal(app.run('chartBar.data.datasets[1].data.join()'), '0,0,0,0,0,50');
+  assert.equal(app.run('chartBar.data.datasets[0].backgroundColor'), '#1a9a5c99');
+  app.run(`
+    document.documentElement.dataset.theme = 'pixel-retro';
+    chartTokens = { '--chart-primary': '#22b8b0', '--chart-secondary': '#e9dfac',
+      '--chart-income-fill': '#22b8b0', '--chart-expense-fill': '#ff4b20',
+      '--chart-label': '#e9dfac', '--chart-tick': '#9b9471', '--chart-grid': '#827b5d40' };
+    renderCharts(budgetItems);
+  `);
+  assert.equal(app.run('chartDonut.data.datasets[0].backgroundColor.slice(0, 2).join()'), '#22b8b0,#e9dfac');
+  assert.equal(app.run('chartBar.data.datasets[1].backgroundColor'), '#ff4b20');
+  assert.equal(app.run('chartBar.options.scales.y.ticks.color'), '#9b9471');
+  assert.equal(app.run('chartBar.options.scales.y.ticks.callback(2000)'), '2к');
+  assert.equal(app.run('chartBar.options.scales.x.grid.color'), '#827b5d40');
+  assert.equal(app.run('chartDonut.options.plugins.legend.labels.color'), '#e9dfac');
+  app.run(`globalThis.matchMedia = () => ({ matches: true }); applyChartTheme(chartBar.config);`);
+  assert.equal(app.run('chartBar.options.animation'), false);
+  app.run(`document.documentElement.dataset.theme = 'classic'; applyChartTheme(chartBar.config);`);
+  assert.equal(app.run('chartBar.options.animation'), undefined);
+});
 test('a stored Pixel Retro theme applies before body initialization', () => {
   const result = runBootstrap('pixel-retro');
   assert.equal(result.theme, 'pixel-retro');
@@ -98,7 +169,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   };
   const sandbox = {
     document, localStorage: storage, window: { localStorage: storage }, navigator: {},
-    supabase: { createClient() { return { auth }; } }, console,
+    supabase: { createClient() { return { auth }; } }, console, structuredClone,
     setTimeout(callback, delay) { timers.push({ callback, delay }); return timers.length; }, clearTimeout() {}
   };
   const context = vm.createContext(sandbox);
