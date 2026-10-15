@@ -120,7 +120,7 @@ test('bootstrap restores local preference without network or Supabase calls', ()
   assert.deepEqual(runBootstrap('pixel-retro').networkCalls, []);
 });
 
-function appHarness({ updateError = null, storageThrows = false, missingThemeAsset = false, initialTheme = 'classic', updateRemoteImpl, keepNavigation = false } = {}) {
+function appHarness({ updateError = null, storageThrows = false, missingThemeAsset = false, initialTheme = 'classic', updateRemoteImpl, keepNavigation = false, realLoadAllData = false } = {}) {
   const values = new Map();
   const nodes = new Map();
   const callbacks = [];
@@ -128,6 +128,24 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   const timers = [];
   const frames = [];
   const observers = [];
+  const databaseRequests = [];
+  let activeDatabaseUser = null;
+  function queryTable(table) {
+    let pending;
+    const start = () => {
+      if (!pending) {
+        pending = new Promise(resolve => databaseRequests.push({ userId: activeDatabaseUser, table, resolve }));
+      }
+      return pending;
+    };
+    const builder = {
+      select() { return builder; },
+      order() { return builder; },
+      single() { return start(); },
+      then(resolve, reject) { return start().then(resolve, reject); }
+    };
+    return builder;
+  }
   function element(id = '') {
     const attributes = {};
     const classes = new Set();
@@ -186,9 +204,10 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     },
     async signOut() { return { error: null }; }
   };
+  const client = { auth, from: queryTable };
   const sandbox = {
     document, localStorage: storage, window: { localStorage: storage }, navigator: {},
-    supabase: { createClient() { return { auth }; } }, console, structuredClone,
+    supabase: { createClient() { return client; } }, console, structuredClone,
     requestAnimationFrame(callback) { frames.push(callback); },
     MutationObserver: class { constructor(callback) { observers.push(callback); } observe() {} },
     setTimeout(callback, delay) { timers.push({ callback, delay }); return timers.length; }, clearTimeout() {}
@@ -202,10 +221,19 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     globalThis.testLoadCalls = 0;
     globalThis.testShowCalls = [];
     globalThis.testFinancialWrites = [];
-    loadAllData = async () => { testLoadCalls++; };
     dbUpsert = async (...args) => { testFinancialWrites.push(args); return null; };
     setAuthMode = () => {};
   `, context);
+  if (realLoadAllData) {
+    vm.runInContext(`
+      globalThis.testSnapshotCalls = [];
+      const actualLoadAllData = loadAllData;
+      loadAllData = (...args) => { testLoadCalls++; return actualLoadAllData(...args); };
+      saveNetWorthSnapshot = async scope => { testSnapshotCalls.push(scope); };
+    `, context);
+  } else {
+    vm.runInContext('loadAllData = async () => { testLoadCalls++; };', context);
+  }
   if (!keepNavigation) vm.runInContext(`showPage = name => {
     testShowCalls.push(name);
     if (name === 'import') { importRows = []; importRawFile = null; }
@@ -215,10 +243,20 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     get loadCalls() { return context.testLoadCalls; },
     get showCalls() { return [...context.testShowCalls]; },
     get financialWrites() { return [...context.testFinancialWrites]; },
+    get snapshotCalls() { return context.testSnapshotCalls ? [...context.testSnapshotCalls] : []; },
+    databaseRequests,
+    resolveDatabase(userId, dataByTable) {
+      const matches = databaseRequests.filter(request => request.userId === userId && !request.resolved);
+      for (const request of matches) {
+        request.resolved = true;
+        request.resolve({ data: dataByTable[request.table] });
+      }
+      return matches.length;
+    },
     run(source) { return vm.runInContext(source, context); },
     flushFrames() { while (frames.length) frames.shift()(); },
     flushThemeMutation() { observers.forEach(callback => callback()); },
-    async authEvent(event, session) { return callbacks[0](event, session); },
+    async authEvent(event, session) { activeDatabaseUser = session?.user?.id || null; return callbacks[0](event, session); },
     async flushAuthTasks() {
       while (timers.some(timer => timer.delay === 0)) {
         const index = timers.findIndex(timer => timer.delay === 0);
@@ -541,6 +579,80 @@ test('TOKEN_REFRESHED for the same user does not invalidate the queued theme wri
   assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }, { data: { theme: 'classic' } }]);
   assert.equal(app.root.dataset.theme, 'classic');
   assert.equal(app.values.has('finora_theme_sync_pending'), false);
+});
+
+test('repeat SIGNED_IN cannot reconcile over in-flight and queued local theme intents', async () => {
+  let resolveFirst;
+  let calls = 0;
+  const app = appHarness({ updateRemoteImpl: () => {
+    if (calls++ === 0) return new Promise(resolve => { resolveFirst = resolve; });
+    return { error: new Error('Offline') };
+  } });
+  const classic = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'classic' } } };
+  const pixel = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'pixel-retro' } } };
+  await app.authEvent('SIGNED_IN', classic);
+  await app.flushAuthTasks();
+  const first = app.run('toggleTheme()');
+  await Promise.resolve();
+  const second = app.run('toggleTheme()');
+  assert.equal(app.run('themeController.hasActiveSync(themeAuthGeneration)'), true);
+  await app.authEvent('USER_UPDATED', pixel);
+  await app.authEvent('SIGNED_IN', pixel);
+  await app.flushAuthTasks();
+  resolveFirst({ error: null });
+  await first;
+  await Promise.resolve();
+  assert.equal(app.run('themeController.hasActiveSync(themeAuthGeneration)'), true);
+  await second;
+  assert.equal(app.run('themeController.hasActiveSync(themeAuthGeneration)'), false);
+  assert.equal(app.root.dataset.theme, 'classic');
+  assert.equal(app.values.get('finora_theme'), 'classic');
+  assert.equal(app.values.get('finora_theme_sync_pending'), 'classic');
+  assert.equal(app.nodes.get('toast').dataset.kind, 'warning');
+  assert.match(app.nodes.get('toast').textContent, /сохранена на этом устройстве/i);
+
+  await app.authEvent('SIGNED_IN', pixel);
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+});
+
+test('stale account load cannot commit data or UI after a newer account starts loading', async () => {
+  const app = appHarness({ realLoadAllData: true });
+  const pendingA = app.authEvent('SIGNED_IN', { user: { id: 'user-A', user_metadata: { theme: 'classic' } } });
+  await Promise.resolve();
+  await Promise.resolve();
+  const pendingB = app.authEvent('SIGNED_IN', { user: { id: 'user-B', user_metadata: { theme: 'pixel-retro' } } });
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(app.databaseRequests.filter(request => request.userId === 'user-A').length, 5);
+  assert.equal(app.databaseRequests.filter(request => request.userId === 'user-B').length, 5);
+  const generationB = app.run('themeAuthGeneration');
+  assert.equal(app.nodes.get('nav').style.display, 'none');
+  assert.equal(app.nodes.get('loading-screen').classList.contains('hidden'), false);
+
+  assert.equal(app.resolveDatabase('user-A', {
+    wallets: [{ id: 'wallet-A', name: 'A secret', balance: 10 }],
+    receivables: [], debts: [], budget_items: [],
+    categories: { id: 'categories-A', data: { expense: [], income: [] }, tags: [] }
+  }), 5);
+  await pendingA;
+  assert.equal(JSON.stringify(app.run('wallets.map(wallet => wallet.name)')), '[]');
+  assert.equal(app.nodes.get('nav').style.display, 'none');
+  assert.equal(app.nodes.get('loading-screen').classList.contains('hidden'), false);
+  assert.deepEqual(app.showCalls, []);
+  assert.equal(app.snapshotCalls.length, 0);
+
+  assert.equal(app.resolveDatabase('user-B', {
+    wallets: [{ id: 'wallet-B', name: 'B wallet', balance: 20 }],
+    receivables: [], debts: [], budget_items: [],
+    categories: { id: 'categories-B', data: { expense: [], income: [] }, tags: [] }
+  }), 5);
+  await pendingB;
+  assert.equal(JSON.stringify(app.run('wallets.map(wallet => wallet.name)')), '["B wallet"]');
+  assert.equal(app.nodes.get('nav').style.display, '');
+  assert.equal(app.nodes.get('loading-screen').classList.contains('hidden'), true);
+  assert.deepEqual(app.showCalls, ['home']);
+  assert.equal(JSON.stringify(app.snapshotCalls), JSON.stringify([{ generation: generationB, userId: 'user-B' }]));
 });
 
 test('sign-out invalidates scheduled reconciliation even if the next login repeats the same session fingerprint', async () => {

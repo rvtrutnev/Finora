@@ -1479,11 +1479,16 @@ async function dbDelete(table, id) {
   if (error) { console.error(table, error); return error; }
   return null;
 }
-async function saveCategories() {
+function isCurrentAuthContext(context) {
+  return !context || (context.generation === themeAuthGeneration && context.userId === themeAuthUser?.id);
+}
+
+async function saveCategories(authContext) {
+  if (!isCurrentAuthContext(authContext)) return;
   const row = { data: categories, tags: budgetTags };
   if (categoriesRowId) row.id = categoriesRowId;
   const { data, error } = await sb.from('categories').upsert(row).select().single();
-  if (!error && data) categoriesRowId = data.id;
+  if (!error && data && isCurrentAuthContext(authContext)) categoriesRowId = data.id;
 }
 
 let currentBudgetType = 'expense';
@@ -2976,7 +2981,8 @@ if ('serviceWorker' in navigator) {
 }
 
 // ==================== INIT ====================
-async function loadAllData() {
+async function loadAllData(generation = themeAuthGeneration, userId = themeAuthUser?.id) {
+  const authContext = { generation, userId };
   const [w, r, d, b, c] = await Promise.all([
     sb.from('wallets').select('*').order('sort_order').order('created_at'),
     sb.from('receivables').select('*').order('created_at'),
@@ -2984,26 +2990,38 @@ async function loadAllData() {
     sb.from('budget_items').select('*').order('created_at'),
     sb.from('categories').select('*').single(),
   ]);
-  wallets = w.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
-  receivables = r.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
-  debts = d.data?.map(x => ({
+  if (!isCurrentAuthContext(authContext)) return false;
+
+  const nextWallets = w.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
+  const nextReceivables = r.data?.map(x => ({ ...x, exclude_from_networth: !!x.exclude_from_networth })) || [];
+  const nextDebts = d.data?.map(x => ({
     id: x.id, name: x.name, original_amount: x.original_amount, amount: x.amount, currency: x.currency || 'RUB',
     group: x.group, note: x.note, interest_rate: x.interest_rate || 0, min_payment: x.min_payment || 0
   })) || [];
-  budgetItems = b.data?.map(x => ({
+  const nextBudgetItems = b.data?.map(x => ({
     id: x.id, type: x.type, category: x.category, subcategory: x.subcategory,
     amount: x.amount, currency: x.currency || 'RUB', date: x.date, note: x.note, tag: x.tag,
     recurring: x.recurring, recurDay: x.recur_day, startMonth: x.start_month
   })) || [];
-  if (c.data) {
-    categories = c.data.data;
-    categoriesRowId = c.data.id;
-    if (Array.isArray(c.data.tags) && c.data.tags.length) budgetTags = c.data.tags;
-  } else {
-    categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-    await saveCategories();
-  }
-  saveNetWorthSnapshot();
+  const nextCategories = c.data ? c.data.data : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+  const nextCategoriesRowId = c.data ? c.data.id : null;
+  const nextBudgetTags = c.data && Array.isArray(c.data.tags) && c.data.tags.length
+    ? c.data.tags
+    : budgetTags;
+
+  if (!isCurrentAuthContext(authContext)) return false;
+  wallets = nextWallets;
+  receivables = nextReceivables;
+  debts = nextDebts;
+  budgetItems = nextBudgetItems;
+  categories = nextCategories;
+  categoriesRowId = nextCategoriesRowId;
+  budgetTags = nextBudgetTags;
+
+  if (!c.data) await saveCategories(authContext);
+  if (!isCurrentAuthContext(authContext)) return false;
+  saveNetWorthSnapshot(authContext);
+  return true;
 }
 
 // ==================== NET WORTH ====================
@@ -3035,14 +3053,17 @@ async function computeNetWorth() {
   return { assets, liabilities, total: assets - liabilities, rates, fresh, rateDate: date };
 }
 
-async function saveNetWorthSnapshot() {
+async function saveNetWorthSnapshot(authContext) {
+  if (!isCurrentAuthContext(authContext)) return false;
   const { assets, liabilities, total, rates } = await computeNetWorth();
+  if (!isCurrentAuthContext(authContext)) return false;
   const today = new Date().toISOString().slice(0, 10);
   const { error } = await sb.from('net_worth_snapshots').upsert(
     { snapshot_date: today, total_rub: total, assets_rub: assets, liabilities_rub: liabilities, rates },
     { onConflict: 'user_id,snapshot_date' }
   );
   if (error) console.error('net worth snapshot', error);
+  return !error;
 }
 
 async function renderNetWorth() {
@@ -3422,7 +3443,8 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
   if (themeAuthUser) {
     const sessionKey = JSON.stringify([themeAuthUser.id, themeAuthUser.user_metadata?.theme || null]);
-    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && sessionKey !== themeSessionKey) {
+    const canReconcileTheme = !themeController?.hasActiveSync(themeAuthGeneration);
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && canReconcileTheme && sessionKey !== themeSessionKey) {
       themeSessionKey = sessionKey;
       const generation = themeAuthGeneration;
       // Supabase auth methods must run after its callback releases the auth lock.
@@ -3447,7 +3469,10 @@ sb.auth.onAuthStateChange(async (event, session) => {
 
   if (session) {
     authScreen.classList.add('hidden');
-    await loadAllData();
+    const generation = themeAuthGeneration;
+    const userId = themeAuthUser.id;
+    const loaded = await loadAllData(generation, userId);
+    if (loaded === false || generation !== themeAuthGeneration || themeAuthUser?.id !== userId) return;
     loading.classList.add('hidden');
     nav.style.display = '';
     applyTranslations();

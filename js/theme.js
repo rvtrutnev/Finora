@@ -28,6 +28,7 @@
     let currentTheme = normalizeTheme(read(STORAGE_KEY)) || DEFAULT_THEME;
     let remoteQueue = Promise.resolve();
     let remoteIntent = 0;
+    const activeLocalSyncs = new Map();
 
     function read(key) {
       try {
@@ -100,6 +101,10 @@
       return Object.is(context, getRemoteContext());
     }
 
+    function hasActiveSync(context = getRemoteContext()) {
+      return (activeLocalSyncs.get(context) || 0) > 0;
+    }
+
     function syncRemote(theme, intent, context) {
       if (typeof updateRemote !== 'function') return Promise.resolve(false);
 
@@ -131,11 +136,18 @@
         return { theme, synced: false, source: 'local' };
       }
       write(PENDING_KEY, theme);
-      const synced = await syncRemote(theme, intent, context);
-      if (!synced && intent === remoteIntent && isCurrentRemoteContext(context)) {
-        notify(translate('theme_sync_local_only'), 'warning');
+      activeLocalSyncs.set(context, (activeLocalSyncs.get(context) || 0) + 1);
+      try {
+        const synced = await syncRemote(theme, intent, context);
+        if (!synced && intent === remoteIntent && isCurrentRemoteContext(context)) {
+          notify(translate('theme_sync_local_only'), 'warning');
+        }
+        return { theme, synced, source: 'local' };
+      } finally {
+        const remaining = (activeLocalSyncs.get(context) || 1) - 1;
+        if (remaining) activeLocalSyncs.set(context, remaining);
+        else activeLocalSyncs.delete(context);
       }
-      return { theme, synced, source: 'local' };
     }
 
     async function reconcile(user) {
@@ -174,7 +186,7 @@
 
     apply(currentTheme, { persist: true });
 
-    return { getTheme, apply, toggle, reconcile, refreshControls };
+    return { getTheme, apply, toggle, reconcile, refreshControls, hasActiveSync };
   }
 
   window.FinoraTheme = {
