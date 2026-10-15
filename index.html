@@ -3447,11 +3447,15 @@ sb.auth.onAuthStateChange(async (event, session) => {
     if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && canReconcileTheme && sessionKey !== themeSessionKey) {
       themeSessionKey = sessionKey;
       const generation = themeAuthGeneration;
+      const intentVersion = themeController?.getIntentVersion() ?? 0;
       // Supabase auth methods must run after its callback releases the auth lock.
       setTimeout(() => {
-        if (generation === themeAuthGeneration && themeAuthUser?.id === session.user.id && themeSessionKey === sessionKey) {
-          return reconcileTheme(session.user);
+        if (generation !== themeAuthGeneration || themeAuthUser?.id !== session.user.id || themeSessionKey !== sessionKey) return;
+        if ((themeController?.getIntentVersion() ?? 0) !== intentVersion || themeController?.hasActiveSync(generation)) {
+          if (themeSessionKey === sessionKey) themeSessionKey = null;
+          return;
         }
+        return reconcileTheme(session.user);
       }, 0);
     }
   } else if (!authIdentityChanged) {

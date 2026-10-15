@@ -28,6 +28,7 @@
     let currentTheme = normalizeTheme(read(STORAGE_KEY)) || DEFAULT_THEME;
     let remoteQueue = Promise.resolve();
     let remoteIntent = 0;
+    let localIntentVersion = 0;
     const activeLocalSyncs = new Map();
 
     function read(key) {
@@ -126,6 +127,7 @@
 
     async function toggle() {
       const context = getRemoteContext();
+      localIntentVersion += 1;
       const theme = apply(currentTheme === 'classic' ? 'pixel-retro' : 'classic', {
         persist: true,
         notify: true
@@ -186,7 +188,11 @@
 
     apply(currentTheme, { persist: true });
 
-    return { getTheme, apply, toggle, reconcile, refreshControls, hasActiveSync };
+    function getIntentVersion() {
+      return localIntentVersion;
+    }
+
+    return { getTheme, apply, toggle, reconcile, refreshControls, hasActiveSync, getIntentVersion };
   }
 
   window.FinoraTheme = {

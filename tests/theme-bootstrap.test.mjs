@@ -616,6 +616,64 @@ test('repeat SIGNED_IN cannot reconcile over in-flight and queued local theme in
   assert.equal(app.root.dataset.theme, 'pixel-retro');
 });
 
+test('scheduled reconcile is invalidated by a newer queued local intent', async () => {
+  let resolveFirst;
+  let calls = 0;
+  const app = appHarness({ updateRemoteImpl: () => {
+    if (calls++ === 0) return new Promise(resolve => { resolveFirst = resolve; });
+    return { error: new Error('Offline') };
+  } });
+  const classic = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'classic' } } };
+  const pixel = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'pixel-retro' } } };
+  await app.authEvent('INITIAL_SESSION', classic);
+  await app.flushAuthTasks();
+  await app.authEvent('USER_UPDATED', pixel);
+  await app.authEvent('SIGNED_IN', pixel);
+
+  const first = app.run('toggleTheme()');
+  await Promise.resolve();
+  const second = app.run('toggleTheme()');
+  assert.equal(app.run('themeController.getIntentVersion()'), 2);
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'classic');
+
+  resolveFirst({ error: null });
+  await first;
+  await second;
+  assert.equal(app.root.dataset.theme, 'classic');
+  assert.equal(app.values.get('finora_theme'), 'classic');
+  assert.equal(app.values.get('finora_theme_sync_pending'), 'classic');
+  assert.equal(app.nodes.get('toast').dataset.kind, 'warning');
+  assert.match(app.nodes.get('toast').textContent, /сохранена на этом устройстве/i);
+
+  await app.authEvent('SIGNED_IN', pixel);
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+});
+
+test('scheduled reconcile stays stale after local work finishes and a later SIGNED_IN can reconcile', async () => {
+  const app = appHarness({ updateRemoteImpl: async () => ({ error: null }) });
+  const classic = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'classic' } } };
+  const pixel = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'pixel-retro' } } };
+  await app.authEvent('INITIAL_SESSION', classic);
+  await app.flushAuthTasks();
+  await app.authEvent('USER_UPDATED', pixel);
+  await app.authEvent('SIGNED_IN', pixel);
+
+  const first = app.run('toggleTheme()');
+  const second = app.run('toggleTheme()');
+  await Promise.all([first, second]);
+  assert.equal(app.run('themeController.hasActiveSync(themeAuthGeneration)'), false);
+  assert.equal(app.root.dataset.theme, 'classic');
+
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'classic');
+  assert.equal(app.values.has('finora_theme_sync_pending'), false);
+  await app.authEvent('SIGNED_IN', pixel);
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+});
+
 test('stale account load cannot commit data or UI after a newer account starts loading', async () => {
   const app = appHarness({ realLoadAllData: true });
   const pendingA = app.authEvent('SIGNED_IN', { user: { id: 'user-A', user_metadata: { theme: 'classic' } } });
