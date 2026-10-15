@@ -1440,6 +1440,7 @@ let themeAuthUser = null;
 let themeAuthIdentity = null;
 let themeAuthGeneration = 0;
 let themeSessionKey = null;
+let themeReconcileScheduleId = 0;
 let themeStorage;
 try { themeStorage = window.localStorage; } catch (_error) {}
 const themeController = window.FinoraTheme?.createThemeController?.({
@@ -3440,6 +3441,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     themeAuthIdentity = authIdentity;
     themeAuthGeneration += 1;
     themeSessionKey = null;
+    themeReconcileScheduleId += 1;
   }
   if (themeAuthUser) {
     const sessionKey = JSON.stringify([themeAuthUser.id, themeAuthUser.user_metadata?.theme || null]);
@@ -3448,18 +3450,24 @@ sb.auth.onAuthStateChange(async (event, session) => {
       themeSessionKey = sessionKey;
       const generation = themeAuthGeneration;
       const intentVersion = themeController?.getIntentVersion() ?? 0;
+      const scheduleId = ++themeReconcileScheduleId;
       // Supabase auth methods must run after its callback releases the auth lock.
       setTimeout(() => {
-        if (generation !== themeAuthGeneration || themeAuthUser?.id !== session.user.id || themeSessionKey !== sessionKey) return;
+        if (scheduleId !== themeReconcileScheduleId || generation !== themeAuthGeneration || themeAuthUser?.id !== session.user.id || themeSessionKey !== sessionKey) return;
         if ((themeController?.getIntentVersion() ?? 0) !== intentVersion || themeController?.hasActiveSync(generation)) {
-          if (themeSessionKey === sessionKey) themeSessionKey = null;
+          if (scheduleId === themeReconcileScheduleId) {
+            if (themeSessionKey === sessionKey) themeSessionKey = null;
+            themeReconcileScheduleId += 1;
+          }
           return;
         }
+        themeReconcileScheduleId += 1;
         return reconcileTheme(session.user);
       }, 0);
     }
   } else if (!authIdentityChanged) {
     themeSessionKey = null;
+    themeReconcileScheduleId += 1;
   }
 
   // Metadata echoes and token renewal keep the same financial UI and theme intent.

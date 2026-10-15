@@ -674,6 +674,29 @@ test('scheduled reconcile stays stale after local work finishes and a later SIGN
   assert.equal(app.root.dataset.theme, 'pixel-retro');
 });
 
+test('an older ABA reconcile timer cannot clear or replace a newer schedule for the same session key', async () => {
+  const app = appHarness({ updateRemoteImpl: async () => ({ error: null }) });
+  const classic = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'classic' } } };
+  const pixel = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'pixel-retro' } } };
+  await app.authEvent('INITIAL_SESSION', classic);
+  await app.flushAuthTasks();
+  await app.authEvent('USER_UPDATED', pixel);
+  await app.authEvent('SIGNED_IN', pixel); // K_old
+
+  const first = app.run('toggleTheme()');
+  const second = app.run('toggleTheme()');
+  await Promise.all([first, second]);
+  assert.equal(app.root.dataset.theme, 'classic');
+
+  await app.authEvent('SIGNED_IN', classic); // L
+  await app.authEvent('SIGNED_IN', pixel); // K_new
+  await app.flushAuthTasks();
+
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+  assert.equal(app.values.get('finora_theme'), 'pixel-retro');
+  assert.equal(app.run('themeSessionKey'), JSON.stringify(['user-A', 'pixel-retro']));
+});
+
 test('stale account load cannot commit data or UI after a newer account starts loading', async () => {
   const app = appHarness({ realLoadAllData: true });
   const pendingA = app.authEvent('SIGNED_IN', { user: { id: 'user-A', user_metadata: { theme: 'classic' } } });
