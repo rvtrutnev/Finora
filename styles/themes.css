@@ -292,10 +292,13 @@
   [data-theme="pixel-retro"] :is(#budget-income-total, #budget-expense-total, #budget-balance) { font-size: 0.875rem; overflow-wrap: anywhere; }
   /* Financial rows keep their natural layout while they fit. At larger text
      sizes, allow whole value groups to wrap instead of exceeding the card. */
-  [data-theme="pixel-retro"] #page-home .card .flex:not(.flex-col) { flex-wrap: wrap; }
-  [data-theme="pixel-retro"] #page-home .card .flex > * { min-width: 0; overflow-wrap: anywhere; }
-  [data-theme="pixel-retro"] #page-home .card .flex > :not(.truncate) { max-width: 100%; }
-  [data-theme="pixel-retro"] #page-home .card .flex > .ml-2 { max-width: calc(100% - 0.5rem); }
+  [data-theme="pixel-retro"] .page .flex:not(.flex-col) { flex-wrap: wrap; }
+  [data-theme="pixel-retro"] .page .flex > * { min-width: 0; overflow-wrap: anywhere; }
+  [data-theme="pixel-retro"] .page .flex > :not(.truncate) { max-width: 100%; }
+  [data-theme="pixel-retro"] .page .flex > .ml-2 { max-width: calc(100% - 0.5rem); }
+  [data-theme="pixel-retro"] #page-budget > .grid-cols-3 {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr));
+  }
 }
 
 /* Specificity beats outline-none utilities regardless of CDN insertion order.
