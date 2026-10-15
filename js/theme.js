@@ -66,6 +66,9 @@
         control.setAttribute('aria-label', label);
         control.title = label;
       }
+      for (const labelElement of document.querySelectorAll('[data-theme-toggle-label]')) {
+        labelElement.textContent = label;
+      }
     }
 
     function apply(theme, { persist = true, notify: shouldNotify = false } = {}) {

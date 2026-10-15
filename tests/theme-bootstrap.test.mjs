@@ -144,6 +144,10 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     };
   }
   const control = element('theme-toggle');
+  const authControl = /<button\b(?=[^>]*\bid="auth-theme-toggle")(?=[^>]*\bdata-theme-toggle\b)[^>]*>/s.test(html)
+    ? element('auth-theme-toggle')
+    : null;
+  if (authControl) nodes.set(authControl.id, authControl);
   const meta = element();
   const root = { dataset: { theme: initialTheme } };
   const document = {
@@ -153,10 +157,12 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     querySelector(selector) {
       if (selector === 'meta[name="theme-color"]') return meta;
       if (selector === 'nav') return nodes.get('nav');
+      if (selector === '.page.active') return [...nodes.values()].find(node => node.id.startsWith('page-') && node.classList.contains('active')) || null;
       return null;
     },
     querySelectorAll(selector) {
-      if (selector === '[data-theme-toggle]') return [control];
+      if (selector === '[data-theme-toggle]') return [control, authControl].filter(Boolean);
+      if (selector === '[data-theme-toggle-label]') return nodes.has('auth-theme-toggle-label') ? [nodes.get('auth-theme-toggle-label')] : [];
       if (selector === '.card-animate') return [...nodes.values()].filter(node => node.classList.contains('card-animate'));
       return [];
     }
@@ -191,10 +197,23 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   vm.runInContext(scripts.at(-1)[1], context, { filename: 'index.html#application' });
   // Keep the real auth callback and theme adapter; replace financial UI/data boundaries.
-  vm.runInContext('loadAllData = async () => {}; setAuthMode = () => {};', context);
-  if (!keepNavigation) vm.runInContext('showPage = () => {};', context);
+  vm.runInContext(`
+    globalThis.testLoadCalls = 0;
+    globalThis.testShowCalls = [];
+    globalThis.testFinancialWrites = [];
+    loadAllData = async () => { testLoadCalls++; };
+    dbUpsert = async (...args) => { testFinancialWrites.push(args); return null; };
+    setAuthMode = () => {};
+  `, context);
+  if (!keepNavigation) vm.runInContext(`showPage = name => {
+    testShowCalls.push(name);
+    if (name === 'import') { importRows = []; importRawFile = null; }
+  };`, context);
   return {
-    values, root, control, nodes, writes, callbacks,
+    values, root, control, authControl, nodes, writes, callbacks,
+    get loadCalls() { return context.testLoadCalls; },
+    get showCalls() { return [...context.testShowCalls]; },
+    get financialWrites() { return [...context.testFinancialWrites]; },
     run(source) { return vm.runInContext(source, context); },
     flushFrames() { while (frames.length) frames.shift()(); },
     flushThemeMutation() { observers.forEach(callback => callback()); },
@@ -270,6 +289,50 @@ test('the application toggle updates root, accessible action and Supabase metada
   assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }]);
   assert.match(app.nodes.get('toast').textContent, /Pixel Retro/);
   assert.equal(app.nodes.get('toast').dataset.kind, 'success');
+});
+
+test('the localized auth-screen theme toggle is available with no session', async () => {
+  const app = appHarness();
+  await app.authEvent('INITIAL_SESSION', null);
+  assert.equal(app.nodes.get('auth-screen').classList.contains('hidden'), false);
+  assert.equal(app.authControl.getAttribute('aria-label'), 'Переключить на Pixel Retro');
+  assert.equal(app.nodes.get('auth-theme-toggle-label').textContent, 'Переключить на Pixel Retro');
+  app.run("setLanguage('en');");
+  assert.equal(app.authControl.getAttribute('aria-label'), 'Switch to Pixel Retro');
+  assert.equal(app.nodes.get('auth-theme-toggle-label').textContent, 'Switch to Pixel Retro');
+  await app.run('toggleTheme()');
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+  assert.equal(app.authControl.getAttribute('aria-pressed'), 'true');
+  assert.equal(app.authControl.getAttribute('aria-label'), 'Switch to Classic');
+  assert.equal(app.nodes.get('auth-theme-toggle-label').textContent, 'Switch to Classic');
+  assert.deepEqual(app.writes, []);
+});
+
+test('USER_UPDATED does not reload finance data, navigate or clear an unfinished import', async () => {
+  const app = appHarness();
+  const session = { access_token: 'token-1', user: { id: 'user-1', user_metadata: { theme: 'classic' } } };
+  await app.authEvent('INITIAL_SESSION', session);
+  await app.flushAuthTasks();
+  app.run("importRows = [{ date: '2026-10-15', amount: 125, checked: true }]; importRawFile = { name: 'unfinished.csv' }; document.getElementById('page-import').classList.add('active');");
+  const loadCalls = app.loadCalls;
+  const showCalls = app.showCalls;
+  const writes = app.financialWrites;
+  await app.authEvent('USER_UPDATED', { ...session, user: { ...session.user, user_metadata: { theme: 'pixel-retro' } } });
+  await app.flushAuthTasks();
+  assert.equal(app.loadCalls, loadCalls);
+  assert.deepEqual(app.showCalls, showCalls);
+  assert.deepEqual(app.financialWrites, writes);
+  assert.equal(app.run('importRows[0].amount'), 125);
+  assert.equal(app.run('importRows[0].checked'), true);
+  assert.equal(app.run('importRawFile.name'), 'unfinished.csv');
+});
+
+test('INITIAL_SESSION and SIGNED_IN retain normal authenticated finance startup', async () => {
+  const app = appHarness();
+  await app.authEvent('INITIAL_SESSION', null);
+  await app.authEvent('SIGNED_IN', { user: { id: 'user-1', user_metadata: { theme: 'classic' } } });
+  assert.equal(app.loadCalls, 1);
+  assert.deepEqual(app.showCalls, ['home']);
 });
 
 test('all five languages refresh the action label and theme notification', async () => {
@@ -365,6 +428,54 @@ test('queued theme intent from account A is dropped after sign-out and account B
   assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }], 'An unsent A intent must never update B metadata');
   assert.equal(dropped.synced, false);
   assert.equal(app.root.dataset.theme, 'pixel-retro');
+  assert.equal(app.values.has('finora_theme_sync_pending'), false);
+});
+
+test('stale USER_UPDATED echo cannot replace a queued theme after the newer write fails', async () => {
+  let resolveFirst;
+  let calls = 0;
+  const app = appHarness({ updateRemoteImpl: () => {
+    if (calls++ === 0) return new Promise(resolve => { resolveFirst = resolve; });
+    return { error: new Error('Offline') };
+  } });
+  const session = { access_token: 'token-A', user: { id: 'user-A', user_metadata: { theme: 'classic' } } };
+  await app.authEvent('SIGNED_IN', session);
+  await app.flushAuthTasks();
+  const first = app.run('toggleTheme()');
+  await Promise.resolve();
+  const second = app.run('toggleTheme()');
+  assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }]);
+  await app.authEvent('USER_UPDATED', { ...session, user: { ...session.user, user_metadata: { theme: 'pixel-retro' } } });
+  await app.flushAuthTasks();
+  resolveFirst({ error: null });
+  await Promise.all([first, second]);
+  assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }, { data: { theme: 'classic' } }]);
+  assert.equal(app.root.dataset.theme, 'classic');
+  assert.equal(app.values.get('finora_theme'), 'classic');
+  assert.equal(app.values.get('finora_theme_sync_pending'), 'classic');
+  assert.equal(app.nodes.get('toast').dataset.kind, 'warning');
+  assert.match(app.nodes.get('toast').textContent, /сохранена на этом устройстве/i);
+});
+
+test('TOKEN_REFRESHED for the same user does not invalidate the queued theme write', async () => {
+  let resolveFirst;
+  let calls = 0;
+  const app = appHarness({ updateRemoteImpl: () => {
+    if (calls++ === 0) return new Promise(resolve => { resolveFirst = resolve; });
+    return { error: null };
+  } });
+  const session = { access_token: 'token-old', user: { id: 'user-A', user_metadata: { theme: 'classic' } } };
+  await app.authEvent('SIGNED_IN', session);
+  await app.flushAuthTasks();
+  const first = app.run('toggleTheme()');
+  await Promise.resolve();
+  const second = app.run('toggleTheme()');
+  await app.authEvent('TOKEN_REFRESHED', { ...session, access_token: 'token-new' });
+  await app.flushAuthTasks();
+  resolveFirst({ error: null });
+  await Promise.all([first, second]);
+  assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }, { data: { theme: 'classic' } }]);
+  assert.equal(app.root.dataset.theme, 'classic');
   assert.equal(app.values.has('finora_theme_sync_pending'), false);
 });
 

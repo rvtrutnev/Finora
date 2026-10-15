@@ -197,6 +197,11 @@ tailwind.config = {
       class="w-full btn-gold rounded-lg py-2.5 text-sm font-medium mt-5 transition">
       Войти
     </button>
+    <button id="auth-theme-toggle" data-theme-toggle type="button" onclick="toggleTheme()" aria-pressed="false"
+      aria-label="Переключить на Pixel Retro" title="Переключить на Pixel Retro"
+      class="w-full mt-3 py-2 text-sm text-dark-700 hover:text-gold-600 transition">
+      <span id="auth-theme-toggle-label" data-theme-toggle-label>Переключить на Pixel Retro</span>
+    </button>
   </div>
 </div>
 
@@ -3399,26 +3404,31 @@ sb.auth.onAuthStateChange(async (event, session) => {
   const nav = document.querySelector('nav');
 
   themeAuthUser = session?.user || null;
-  const authIdentity = themeAuthUser ? JSON.stringify([themeAuthUser.id, session.access_token || '']) : null;
+  const authIdentity = themeAuthUser ? String(themeAuthUser.id) : null;
   if (authIdentity !== themeAuthIdentity) {
     themeAuthIdentity = authIdentity;
     themeAuthGeneration += 1;
   }
   if (themeAuthUser) {
-    const sessionKey = JSON.stringify([themeAuthUser.id, session.access_token || '', themeAuthUser.user_metadata?.theme || null]);
+    const sessionKey = JSON.stringify([themeAuthUser.id, themeAuthUser.user_metadata?.theme || null]);
     if (sessionKey !== themeSessionKey) {
       themeSessionKey = sessionKey;
-      const generation = themeAuthGeneration;
-      // Supabase auth methods must run after its callback releases the auth lock.
-      setTimeout(() => {
-        if (generation === themeAuthGeneration && themeAuthUser?.id === session.user.id && themeSessionKey === sessionKey) {
-          return reconcileTheme(session.user);
-        }
-      }, 0);
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        const generation = themeAuthGeneration;
+        // Supabase auth methods must run after its callback releases the auth lock.
+        setTimeout(() => {
+          if (generation === themeAuthGeneration && themeAuthUser?.id === session.user.id && themeSessionKey === sessionKey) {
+            return reconcileTheme(session.user);
+          }
+        }, 0);
+      }
     }
   } else {
     themeSessionKey = null;
   }
+
+  // Metadata echoes and token renewal keep the same financial UI and theme intent.
+  if (event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') return;
 
   if (session) {
     authScreen.classList.add('hidden');
