@@ -1,6 +1,12 @@
 const CACHE_PREFIX = 'finora-';
-const CACHE = `${CACHE_PREFIX}v2`;
-const ASSETS = ['./index.html'];
+const CACHE = `${CACHE_PREFIX}v3`;
+const ASSETS = [
+  './index.html',
+  './styles/themes.css',
+  './js/theme.js',
+  './fonts/press-start-2p/PressStart2P-Regular.woff2',
+  './fonts/press-start-2p/OFL.txt'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));

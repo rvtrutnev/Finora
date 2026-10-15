@@ -12,6 +12,7 @@ function createWorker({ fetchImpl, cacheMatches = new Map(), cacheKeys = [] }) {
   const listeners = {};
   const deletedCaches = [];
   const openedCaches = [];
+  const precachedAssets = [];
 
   const caches = {
     async match(request) {
@@ -27,7 +28,7 @@ function createWorker({ fetchImpl, cacheMatches = new Map(), cacheKeys = [] }) {
     },
     async open(key) {
       openedCaches.push(key);
-      return { async addAll() {} };
+      return { async addAll(assets) { precachedAssets.push([...assets]); } };
     }
   };
 
@@ -73,7 +74,8 @@ function createWorker({ fetchImpl, cacheMatches = new Map(), cacheKeys = [] }) {
     dispatchFetch,
     dispatchLifecycle,
     deletedCaches,
-    openedCaches
+    openedCaches,
+    precachedAssets
   };
 }
 
@@ -149,17 +151,24 @@ test('does not intercept Supabase or CDN requests', async () => {
   assert.equal(cdn, null);
 });
 
-test('install opens the finora-v2 cache', async () => {
+test('install opens finora-v3 and precaches all local theme assets', async () => {
   const worker = createWorker({ fetchImpl: async () => new Response('online') });
   await worker.dispatchLifecycle('install');
-  assert.deepEqual(worker.openedCaches, ['finora-v2']);
+  assert.deepEqual(worker.openedCaches, ['finora-v3']);
+  assert.deepEqual(worker.precachedAssets, [[
+    './index.html',
+    './styles/themes.css',
+    './js/theme.js',
+    './fonts/press-start-2p/PressStart2P-Regular.woff2',
+    './fonts/press-start-2p/OFL.txt'
+  ]]);
 });
 
 test('activation deletes only obsolete Finora caches', async () => {
   const worker = createWorker({
     fetchImpl: async () => new Response('online'),
-    cacheKeys: ['finora-v1', 'finora-v2', 'unrelated-cache']
+    cacheKeys: ['finora-v1', 'finora-v2', 'finora-v3', 'other-app-v1']
   });
   await worker.dispatchLifecycle('activate');
-  assert.deepEqual(worker.deletedCaches, ['finora-v1']);
+  assert.deepEqual(worker.deletedCaches, ['finora-v1', 'finora-v2']);
 });
