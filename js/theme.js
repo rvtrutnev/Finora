@@ -9,6 +9,10 @@
     classic: '#0e0e12',
     'pixel-retro': '#080907'
   });
+  const SHORT_THEME_LABELS = Object.freeze({
+    classic: 'Classic',
+    'pixel-retro': 'Pixel'
+  });
 
   function normalizeTheme(value) {
     return THEMES.includes(value) ? value : null;
@@ -59,9 +63,8 @@
     function refreshControls() {
       if (!document || typeof document.querySelectorAll !== 'function') return;
       const controls = document.querySelectorAll('[data-theme-toggle]');
-      const nextThemeKey = currentTheme === 'classic'
-        ? 'theme_switch_pixel'
-        : 'theme_switch_classic';
+      const nextTheme = currentTheme === 'classic' ? 'pixel-retro' : 'classic';
+      const nextThemeKey = nextTheme === 'pixel-retro' ? 'theme_switch_pixel' : 'theme_switch_classic';
       const label = translate(nextThemeKey);
 
       for (const control of controls) {
@@ -70,7 +73,9 @@
         control.title = label;
       }
       for (const labelElement of document.querySelectorAll('[data-theme-toggle-label]')) {
-        labelElement.textContent = label;
+        labelElement.textContent = labelElement.dataset.themeToggleLabel === 'short'
+          ? SHORT_THEME_LABELS[nextTheme]
+          : label;
       }
     }
 
