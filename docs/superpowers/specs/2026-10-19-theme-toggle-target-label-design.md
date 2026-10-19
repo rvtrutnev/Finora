@@ -15,19 +15,20 @@ The theme controller already refreshes elements marked with `data-theme-toggle-l
 
 ## Design
 
-Add `data-theme-toggle-label` to the compact navigation label and keep the existing theme controller as the single source of truth. Do not add a second selector, a button-specific branch, or duplicate theme state.
+Add `data-theme-toggle-label="short"` to the compact navigation label and keep the existing theme controller as the single source of truth. The controller uses the attribute value to render the compact target name (`Pixel` or `Classic`) while ordinary label elements continue to receive the localized full action. Do not add a second selector, a button-specific state branch, or duplicate theme state.
 
 The controller will continue to update:
 
 - `aria-pressed` to represent whether Pixel Retro is active;
 - `aria-label` and `title` with the localized next-theme action;
-- every `data-theme-toggle-label` element with the same localized next-theme action.
+- ordinary `data-theme-toggle-label` elements with the localized next-theme action;
+- compact `data-theme-toggle-label="short"` elements with the next theme name.
 
-For the compact navigation control, CSS may keep the shortened visual presentation if needed, but the displayed target must change with the active theme.
+The compact navigation control displays `Pixel` in Classic and `Classic` in Pixel Retro.
 
 ## Testing
 
-1. Add a regression assertion that both visible label elements receive `theme_switch_pixel` in Classic and `theme_switch_classic` in Pixel Retro.
+1. Add a regression assertion that the authentication label receives the full localized action while the compact navigation label receives `Pixel` in Classic and `Classic` in Pixel Retro.
 2. Run the focused theme tests and the complete test suite.
 3. In a browser, verify Classic -> Pixel Retro -> Classic and confirm that the button always names the opposite, target theme.
 
