@@ -167,6 +167,15 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     ? element('auth-theme-toggle')
     : null;
   if (authControl) nodes.set(authControl.id, authControl);
+  const navThemeLabelMatch = html.match(
+    /<span\b(?=[^>]*\bdata-theme-toggle-label="short")(?=[^>]*\bclass="[^"]*\btheme-toggle-label\b[^"]*")[^>]*>([^<]*)<\/span>/s
+  );
+  const navThemeLabel = navThemeLabelMatch ? element('navigation-theme-toggle-label') : null;
+  if (navThemeLabel) {
+    navThemeLabel.dataset.themeToggleLabel = 'short';
+    navThemeLabel.textContent = navThemeLabelMatch[1].trim();
+    nodes.set(navThemeLabel.id, navThemeLabel);
+  }
   const meta = element();
   const root = { dataset: { theme: initialTheme } };
   const document = {
@@ -181,7 +190,9 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     },
     querySelectorAll(selector) {
       if (selector === '[data-theme-toggle]') return [control, authControl].filter(Boolean);
-      if (selector === '[data-theme-toggle-label]') return nodes.has('auth-theme-toggle-label') ? [nodes.get('auth-theme-toggle-label')] : [];
+      if (selector === '[data-theme-toggle-label]') {
+        return [navThemeLabel, nodes.get('auth-theme-toggle-label')].filter(Boolean);
+      }
       if (selector === '.card-animate') return [...nodes.values()].filter(node => node.classList.contains('card-animate'));
       return [];
     }
@@ -239,7 +250,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     if (name === 'import') { importRows = []; importRawFile = null; }
   };`, context);
   return {
-    values, root, control, authControl, nodes, writes, callbacks,
+    values, root, control, authControl, navThemeLabel, nodes, writes, callbacks,
     get loadCalls() { return context.testLoadCalls; },
     get showCalls() { return [...context.testShowCalls]; },
     get financialWrites() { return [...context.testFinancialWrites]; },
@@ -328,6 +339,26 @@ test('the application toggle updates root, accessible action and Supabase metada
   assert.deepEqual(app.writes, [{ data: { theme: 'pixel-retro' } }]);
   assert.match(app.nodes.get('toast').textContent, /Pixel Retro/);
   assert.equal(app.nodes.get('toast').dataset.kind, 'success');
+});
+
+test('the navigation toggle always names the theme activated by the next click', async () => {
+  const app = appHarness();
+  assert.ok(app.navThemeLabel, 'The navigation theme label must participate in theme refresh');
+  assert.equal(app.navThemeLabel.textContent, 'Pixel');
+  assert.equal(app.control.getAttribute('aria-label'), 'Переключить на Pixel Retro');
+  assert.equal(app.control.title, 'Переключить на Pixel Retro');
+
+  await app.run('toggleTheme()');
+  assert.equal(app.root.dataset.theme, 'pixel-retro');
+  assert.equal(app.navThemeLabel.textContent, 'Classic');
+  assert.equal(app.control.getAttribute('aria-label'), 'Переключить на классическую тему');
+  assert.equal(app.control.title, 'Переключить на классическую тему');
+
+  await app.run('toggleTheme()');
+  assert.equal(app.root.dataset.theme, 'classic');
+  assert.equal(app.navThemeLabel.textContent, 'Pixel');
+  assert.equal(app.control.getAttribute('aria-label'), 'Переключить на Pixel Retro');
+  assert.equal(app.control.title, 'Переключить на Pixel Retro');
 });
 
 test('the localized auth-screen theme toggle is available with no session', async () => {
