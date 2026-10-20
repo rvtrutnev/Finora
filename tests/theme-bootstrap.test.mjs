@@ -2,10 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const themeSource = fs.readFileSync(new URL('../js/theme.js', import.meta.url), 'utf8');
 const planningSource = fs.readFileSync(new URL('../js/planning.js', import.meta.url), 'utf8');
+const importCoreSource = fs.readFileSync(new URL('../js/import-core.js', import.meta.url), 'utf8');
+const importUISource = fs.readFileSync(new URL('../js/import-ui.js', import.meta.url), 'utf8');
 
 function runBootstrap(stored, { throws = false } = {}) {
   const match = html.match(/<script\b[^>]*\bid="theme-bootstrap"[^>]*>([\s\S]*?)<\/script>/);
@@ -224,7 +227,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   };
   const client = { auth, from: queryTable };
   const sandbox = {
-    document, localStorage: storage, window: { localStorage: storage }, navigator: {},
+    document, localStorage: storage, window: { localStorage: storage, crypto:webcrypto }, navigator: {},
     supabase: { createClient() { return client; } }, console, structuredClone,
     requestAnimationFrame(callback) { frames.push(callback); },
     MutationObserver: class { constructor(callback) { observers.push(callback); } observe() {} },
@@ -232,6 +235,8 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   };
   const context = vm.createContext(sandbox);
   vm.runInContext(planningSource, context);
+  vm.runInContext(importCoreSource, context);
+  vm.runInContext(importUISource, context);
   if (!missingThemeAsset) vm.runInContext(themeSource, context);
   const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   vm.runInContext(scripts.at(-1)[1], context, { filename: 'index.html#application' });
@@ -255,7 +260,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   }
   if (!keepNavigation) vm.runInContext(`showPage = name => {
     testShowCalls.push(name);
-    if (name === 'import') { importRows = []; importRawFile = null; }
+    if (name === 'import') bankImport.reset();
   };`, context);
   return {
     values, root, control, authControl, navThemeLabel, nodes, writes, callbacks,
@@ -391,7 +396,7 @@ test('USER_UPDATED does not reload finance data, navigate or clear an unfinished
   const session = { access_token: 'token-1', user: { id: 'user-1', user_metadata: { theme: 'classic' } } };
   await app.authEvent('INITIAL_SESSION', session);
   await app.flushAuthTasks();
-  app.run("importRows = [{ date: '2026-10-15', amount: 125, checked: true }]; importRawFile = { name: 'unfinished.csv' }; document.getElementById('page-import').classList.add('active');");
+  app.run("bankImport.state.rows = [{ date: '2026-10-15', amount: 125, checked: true }]; document.getElementById('page-import').classList.add('active');");
   const loadCalls = app.loadCalls;
   const showCalls = app.showCalls;
   const writes = app.financialWrites;
@@ -400,9 +405,8 @@ test('USER_UPDATED does not reload finance data, navigate or clear an unfinished
   assert.equal(app.loadCalls, loadCalls);
   assert.deepEqual(app.showCalls, showCalls);
   assert.deepEqual(app.financialWrites, writes);
-  assert.equal(app.run('importRows[0].amount'), 125);
-  assert.equal(app.run('importRows[0].checked'), true);
-  assert.equal(app.run('importRawFile.name'), 'unfinished.csv');
+  assert.equal(app.run('bankImport.state.rows[0].amount'), 125);
+  assert.equal(app.run('bankImport.state.rows[0].checked'), true);
 });
 
 test('INITIAL_SESSION and SIGNED_IN retain normal authenticated finance startup', async () => {

@@ -1,10 +1,15 @@
 const CACHE_PREFIX = 'finora-';
-const CACHE = `${CACHE_PREFIX}v5`;
+const CACHE = `${CACHE_PREFIX}v6`;
 const ASSETS = [
   './index.html',
   './styles/themes.css',
   './js/theme.js',
   './js/planning.js',
+  './js/import-core.js',
+  './js/import-pdf.js',
+  './js/import-ui.js',
+  './vendor/pdfjs/pdf.mjs',
+  './vendor/pdfjs/pdf.worker.mjs',
   './logo.png',
   './logo-pixel.svg',
   './fonts/press-start-2p/PressStart2P-Regular.woff2',
