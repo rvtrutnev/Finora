@@ -1,9 +1,10 @@
 const CACHE_PREFIX = 'finora-';
-const CACHE = `${CACHE_PREFIX}v3`;
+const CACHE = `${CACHE_PREFIX}v4`;
 const ASSETS = [
   './index.html',
   './styles/themes.css',
   './js/theme.js',
+  './js/planning.js',
   './fonts/press-start-2p/PressStart2P-Regular.woff2',
   './fonts/press-start-2p/OFL.txt'
 ];

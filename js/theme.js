@@ -26,6 +26,7 @@
       canSyncRemote = () => true,
       // Optional stable context identity; change it when the remote session is invalidated.
       getRemoteContext = () => undefined,
+      defaultAccountTheme = null,
       translate = key => key,
       notify = () => {}
     } = dependencies;
@@ -130,13 +131,15 @@
       return request;
     }
 
-    async function toggle() {
+    function toggle() {
+      apply(currentTheme === 'classic' ? 'pixel-retro' : 'classic', { persist: true, notify: true });
+      return saveCurrent();
+    }
+
+    async function saveCurrent() {
       const context = getRemoteContext();
       localIntentVersion += 1;
-      const theme = apply(currentTheme === 'classic' ? 'pixel-retro' : 'classic', {
-        persist: true,
-        notify: true
-      });
+      const theme = currentTheme;
       const intent = ++remoteIntent;
       if (typeof updateRemote !== 'function' || !canSyncRemote()) {
         remove(PENDING_KEY);
@@ -175,7 +178,7 @@
       }
 
       const pendingTheme = normalizeTheme(read(PENDING_KEY));
-      const theme = pendingTheme || currentTheme;
+      const theme = normalizeTheme(defaultAccountTheme) || pendingTheme || currentTheme;
       apply(theme, { persist: true });
       if (typeof updateRemote !== 'function') {
         return { theme, synced: false, source: pendingTheme ? 'pending' : 'local' };
@@ -197,7 +200,7 @@
       return localIntentVersion;
     }
 
-    return { getTheme, apply, toggle, reconcile, refreshControls, hasActiveSync, getIntentVersion };
+    return { getTheme, apply, toggle, saveCurrent, reconcile, refreshControls, hasActiveSync, getIntentVersion };
   }
 
   window.FinoraTheme = {

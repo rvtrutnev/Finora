@@ -21,6 +21,7 @@ try {
 }
 </script>
 <script src="./js/theme.js"></script>
+<script src="./js/planning.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
@@ -245,13 +246,39 @@ tailwind.config = {
         <button onclick="setLanguage('es')" class="lang-opt w-full text-left px-3 py-2 text-sm hover:bg-dark-400 rounded-lg transition" data-lang="es">🇪🇸 Español</button>
       </div>
     </div>
-    <button id="theme-toggle" data-theme-toggle type="button" onclick="toggleTheme()" aria-pressed="false" aria-label="Переключить на Pixel Retro" title="Переключить на Pixel Retro" class="px-2 py-2 text-dark-700 hover:text-gold-600 transition flex items-center gap-1">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true" focusable="false"><path d="M2 2h14v10H2V2Zm2 2v6h10V4H4Zm3 9h4v2h3v1H4v-1h3v-2Z"/><path d="M6 5h2v2H6zM10 7h2v2h-2z"/></svg>
-      <span data-theme-toggle-label="short" class="theme-toggle-label text-xs" aria-hidden="true">Pixel</span>
+    <button id="nav-settings" type="button" onclick="showPage('settings')" aria-label="Настройки" title="Настройки" class="px-3 py-3 text-dark-700 hover:text-gold-600 transition">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--color-surface-sunken,#16161b)"/><circle cx="15" cy="17" r="3" fill="var(--color-surface-sunken,#16161b)"/></svg>
     </button>
     <button onclick="signOut()" title="Sign out" class="px-3 py-3.5 text-dark-700 hover:text-danger-600 transition text-lg">⏻</button>
   </div>
 </nav>
+
+<section id="page-settings" class="page max-w-4xl mx-auto p-6">
+  <h1 class="text-xl font-semibold gold-text mb-2">Настройки</h1>
+  <p class="text-sm text-dark-800 mb-6">Сохранённые настройки доступны после входа в вашу учётную запись на любом устройстве.</p>
+  <div class="card rounded-xl p-5 mb-5">
+    <h2 class="font-semibold text-dark-900 mb-2">Оформление</h2>
+    <p id="settings-theme-current" class="text-sm text-dark-800 mb-3"></p>
+    <button id="theme-toggle" data-theme-toggle type="button" onclick="changeSettingsTheme()" aria-pressed="false" aria-label="Переключить на Pixel Retro" title="Переключить на Pixel Retro" class="btn-gold rounded-lg px-4 py-2">
+      <span data-theme-toggle-label="short" class="text-sm" aria-hidden="true">Pixel</span>
+    </button>
+    <p id="settings-theme-status" role="status" class="text-sm text-dark-800 mt-3"></p>
+    <button id="settings-theme-retry" type="button" onclick="retrySettingsTheme()" class="hidden mt-2 underline text-gold-600">Повторить сохранение темы</button>
+  </div>
+  <form class="card rounded-xl p-5" onsubmit="event.preventDefault(); saveDailySettings()">
+    <h2 class="font-semibold text-dark-900 mb-2">Расчёт ежедневных трат</h2>
+    <p class="text-sm text-dark-800 mb-4">Выберите числа месяца, до которых рассчитывать дневной лимит. Расчёт выполняется до ближайшей будущей даты. Если числа нет в месяце, используется его последний день.</p>
+    <fieldset>
+      <legend class="text-sm text-dark-900 mb-3">Даты расчёта</legend>
+      <div id="settings-days" class="grid grid-cols-7 gap-2"></div>
+    </fieldset>
+    <div id="settings-weekends" class="space-y-3 mt-4"></div>
+    <p id="settings-days-count" class="text-sm text-dark-800 mt-3"></p>
+    <p id="settings-days-preview" class="text-sm text-dark-800 mt-2"></p>
+    <button id="settings-save" type="submit" class="btn-gold rounded-lg px-4 py-2 mt-4">Сохранить даты</button>
+    <p id="settings-status" role="status" class="text-sm text-dark-800 mt-3"></p>
+  </form>
+</section>
 
 <!-- ==================== HOME / DASHBOARD PAGE ==================== -->
 <div id="page-home" class="page active max-w-4xl mx-auto p-6">
@@ -446,8 +473,39 @@ tailwind.config = {
     </div>
   </div>
 
+  <section class="card rounded-xl p-5 mb-5" aria-labelledby="irregular-heading">
+    <h2 id="irregular-heading" class="font-semibold text-dark-900 mb-2">Нерегулярные платежи</h2>
+    <p class="text-sm text-dark-800 mb-4">Платежи реже одного раза в месяц. Годовая сумма делится на 12 и включается в расходы бюджета как ежемесячный резерв. Это план накопления, а не списание с кошелька.</p>
+    <div id="irregular-summary" class="text-sm text-gold-600 mb-4"></div>
+    <div id="irregular-list" class="space-y-3 mb-4"></div>
+    <form id="irregular-form" onsubmit="event.preventDefault(); saveIrregularPayment()" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <input id="irregular-id" type="hidden">
+      <label class="text-sm text-dark-800">Название
+        <input id="irregular-name" required maxlength="100" placeholder="Страховка автомобиля" class="w-full bg-dark-300 border border-dark-500 rounded-lg p-2 mt-1 text-dark-900">
+      </label>
+      <label class="text-sm text-dark-800">Сумма одного платежа
+        <input id="irregular-amount" required type="number" min="0.01" max="1000000000" step="0.01" class="w-full bg-dark-300 border border-dark-500 rounded-lg p-2 mt-1 text-dark-900">
+      </label>
+      <label class="text-sm text-dark-800">Валюта
+        <select id="irregular-currency" class="w-full bg-dark-300 border border-dark-500 rounded-lg p-2 mt-1 text-dark-900"><option>RUB</option><option>USD</option><option>EUR</option></select>
+      </label>
+      <label class="text-sm text-dark-800">Повторять раз в … месяцев
+        <input id="irregular-months" required type="number" min="2" max="120" step="1" value="12" class="w-full bg-dark-300 border border-dark-500 rounded-lg p-2 mt-1 text-dark-900">
+      </label>
+      <label class="text-sm text-dark-800">Учитывать в бюджете с
+        <input id="irregular-start" required type="month" class="w-full bg-dark-300 border border-dark-500 rounded-lg p-2 mt-1 text-dark-900">
+      </label>
+      <div class="flex flex-wrap items-end gap-2">
+        <button id="irregular-save" type="submit" class="btn-gold rounded-lg px-4 py-2">Добавить платёж</button>
+        <button type="button" onclick="resetIrregularForm()" class="border border-dark-500 rounded-lg px-4 py-2 text-dark-800">Отменить</button>
+      </div>
+    </form>
+    <p id="irregular-status" role="status" class="text-sm text-dark-800 mt-3"></p>
+  </section>
+
   <!-- Charts -->
-  <div class="grid grid-cols-1 gap-4 mb-5 md:grid-cols-2">
+  <p class="text-xs text-dark-800 mb-3">Диаграммы показывают суммы в RUB, включая плановый резерв. Другие валюты учитываются отдельно в итогах бюджета.</p>
+  <div id="budget-charts" class="grid grid-cols-1 gap-4 mb-5 md:grid-cols-2">
     <div class="card rounded-xl p-4">
       <div class="text-xs text-dark-700 uppercase tracking-wider mb-3" data-i18n="budget_chart_donut">Расходы по категориям</div>
       <div class="relative" style="height:200px">
@@ -1414,6 +1472,197 @@ const DEFAULT_CATEGORIES = {
 let wallets = [], receivables = [], debts = [], budgetItems = [], categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
 let categoriesRowId = null;
 let budgetTags = ['Москва', 'Казань'];
+let accountDays = [{ day: 10, moveWeekend: true }, { day: 25, moveWeekend: true }];
+let irregularPayments = [];
+let irregularReady = false;
+let planningBusy = false;
+
+function loadPlanningProfile(user) {
+  accountDays = window.FinoraPlanning.normalizeSchedule(user?.user_metadata?.finora_daily_days);
+}
+
+async function savePlanningProfile(key, value) {
+  if (!themeAuthUser || planningBusy) throw new Error('Дождитесь завершения сохранения и войдите в учётную запись.');
+  const userId = themeAuthUser.id;
+  const generation = themeAuthGeneration;
+  planningBusy = true;
+  try {
+    const current = await sb.auth.getUser();
+    if (current.error) throw current.error;
+    if (current.data?.user?.id !== userId || generation !== themeAuthGeneration) throw new Error('Учётная запись изменилась.');
+    let result;
+    if (key === 'finora_irregular_payments') {
+      if (!irregularReady) throw new Error('Нерегулярные платежи ещё не загружены.');
+      // Each operation changes one row only, preserving other devices' entries.
+      const changed = value.filter(p => JSON.stringify(p) !== JSON.stringify(irregularPayments.find(old => old.id === p.id)));
+      const removed = irregularPayments.filter(p => !value.some(next => next.id === p.id));
+      if (!changed.length && !removed.length) return true;
+      if (changed.length + removed.length !== 1) throw new Error('Сохраняйте по одному платежу.');
+      if (changed.length) {
+        const { startMonth, ...payment } = changed[0];
+        if (!window.FinoraPlanning.validPayment(changed[0])) throw new Error('Некорректный платёж.');
+        result = await sb.from('irregular_payments').upsert({ ...payment, start_month: startMonth, user_id: userId }, { onConflict: 'user_id,id' });
+      } else {
+        result = await sb.from('irregular_payments').delete().eq('user_id', userId).eq('id', removed[0].id);
+      }
+    } else {
+      result = await sb.auth.updateUser({ data: { [key]: value } });
+    }
+    if (result.error) throw result.error;
+    if (generation !== themeAuthGeneration || themeAuthUser?.id !== userId) return false;
+    if (key === 'finora_daily_days') accountDays = [...value];
+    if (key === 'finora_irregular_payments') irregularPayments = value;
+    return true;
+  } finally {
+    if (generation === themeAuthGeneration) planningBusy = false;
+  }
+}
+
+function renderSettings() {
+  document.getElementById('settings-theme-current').textContent =
+    'Текущая тема: ' + (themeController?.getTheme() === 'pixel-retro' ? 'Pixel Retro' : 'Classic');
+  document.getElementById('settings-days').innerHTML = Array.from({ length: 31 }, (_, i) => i + 1).map(day =>
+    `<label class="flex items-center justify-center gap-1 border border-dark-500 rounded-lg py-2 text-sm text-dark-900 cursor-pointer">
+      <input type="checkbox" value="${day}" ${accountDays.some(entry => entry.day === day) ? 'checked' : ''} onchange="refreshWeekendSettings()" class="accent-gold-600"><span>${day}</span>
+    </label>`).join('');
+  document.getElementById('settings-weekends').innerHTML = '';
+  refreshWeekendSettings();
+}
+function refreshWeekendSettings() {
+  const previous = new Map([...document.querySelectorAll('#settings-weekends input')].map(input => [Number(input.value), input.checked]));
+  const days = [...document.querySelectorAll('#settings-days input:checked')].map(input => Number(input.value));
+  document.getElementById('settings-weekends').innerHTML = days.map(day => {
+    const enabled = previous.has(day) ? previous.get(day) : (accountDays.find(entry => entry.day === day)?.moveWeekend ?? true);
+    return `<label class="flex items-start gap-2 text-sm text-dark-900">
+      <input type="checkbox" value="${day}" ${enabled ? 'checked' : ''} onchange="previewDailySettings()" class="mt-1 accent-gold-600">
+      <span><strong>${day}-е число:</strong> переносить с субботы или воскресенья на предыдущую пятницу</span>
+    </label>`;
+  }).join('');
+  previewDailySettings();
+}
+function selectedAccountDays() {
+  return [...document.querySelectorAll('#settings-weekends input')].map(input => ({ day: Number(input.value), moveWeekend: input.checked }));
+}
+function previewDailySettings() {
+  const days = selectedAccountDays();
+  document.getElementById('settings-days-count').textContent = 'Количество дат в месяце: ' + days.length;
+  document.getElementById('settings-days-preview').textContent = days.length
+    ? 'Ближайшая дата: ' + window.FinoraPlanning.period(days).next.toLocaleDateString('ru-RU')
+    : 'Выберите хотя бы одно число месяца.';
+}
+async function saveDailySettings() {
+  const generation = themeAuthGeneration;
+  const days = selectedAccountDays();
+  const status = document.getElementById('settings-status');
+  if (!days.length) { status.textContent = 'Выберите хотя бы одно число месяца.'; return; }
+  const button = document.getElementById('settings-save');
+  button.disabled = true;
+  status.textContent = 'Сохраняем в учётной записи…';
+  try {
+    if (await savePlanningProfile('finora_daily_days', days)) status.textContent = 'Даты сохранены в учётной записи.';
+  } catch (_error) { if (generation === themeAuthGeneration) status.textContent = 'Не удалось сохранить даты. Проверьте соединение и повторите сохранение.'; }
+  finally { if (generation === themeAuthGeneration) button.disabled = false; }
+}
+async function changeSettingsTheme() {
+  const context = themeAuthGeneration;
+  const result = await toggleTheme();
+  if (context !== themeAuthGeneration) return;
+  document.getElementById('settings-theme-current').textContent =
+    'Текущая тема: ' + (themeController?.getTheme() === 'pixel-retro' ? 'Pixel Retro' : 'Classic');
+  document.getElementById('settings-theme-status').textContent = result?.synced
+    ? 'Тема сохранена в учётной записи.' : 'Тема изменена только на этом устройстве. Повторите сохранение.';
+  document.getElementById('settings-theme-retry').classList.toggle('hidden', !!result?.synced);
+}
+async function retrySettingsTheme() {
+  const generation = themeAuthGeneration;
+  if (!themeController || themeController.hasActiveSync(generation)) return;
+  try {
+    const result = await themeController.saveCurrent();
+    if (generation !== themeAuthGeneration || result.theme !== themeController.getTheme()) return;
+    if (result.synced) {
+      document.getElementById('settings-theme-status').textContent = 'Тема сохранена в учётной записи.';
+      document.getElementById('settings-theme-retry').classList.add('hidden');
+    } else document.getElementById('settings-theme-status').textContent = 'Не удалось сохранить тему. Повторите попытку.';
+  } catch (_error) { if (generation === themeAuthGeneration) document.getElementById('settings-theme-status').textContent = 'Не удалось сохранить тему. Повторите попытку.'; }
+}
+function reserveRows(month) {
+  return Object.entries(window.FinoraPlanning.reserves(irregularPayments, month)).map(([currency, amount]) => ({
+    id: 'reserve-' + currency, type: 'expense', category: 'Резерв на нерегулярные платежи',
+    amount, currency, date: month + '-01', reserve: true
+  }));
+}
+function renderIrregularPayments() {
+  document.getElementById('irregular-save').disabled = !irregularReady || planningBusy;
+  if (!irregularReady) document.getElementById('irregular-status').textContent = 'Нерегулярные платежи недоступны. Проверьте соединение и наличие обновления базы данных, затем обновите страницу.';
+  const totals = window.FinoraPlanning.reserves(irregularPayments, monthKey(currentMonth));
+  document.getElementById('irregular-summary').textContent = 'Резерв в выбранном месяце: ' +
+    (Object.entries(totals).map(([cur, amount]) => fmt(amount, cur)).join(' + ') || fmt(0, 'RUB'));
+  if (!irregularReady) document.getElementById('irregular-summary').textContent = 'Резерв недоступен: итоги расходов и баланс временно не рассчитываются.';
+  document.getElementById('irregular-list').innerHTML = irregularPayments.length ? irregularPayments.map(p => `
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dark-400 pb-3">
+      <div class="min-w-0"><div class="font-medium text-dark-900 break-words">${esc(p.name)}</div>
+        <div class="text-sm text-dark-800">${fmt(p.amount, p.currency)} / ${p.months} мес. · с ${esc(p.startMonth)}</div>
+        <div class="text-sm text-gold-600">${fmt(p.amount * 12 / p.months, p.currency)} в год → ${fmt(p.amount / p.months, p.currency)} в месяц</div>
+      </div>
+      <div class="flex gap-3"><button type="button" data-irregular-edit="${esc(p.id)}" class="text-sm underline text-gold-600">Изменить</button>
+        <button type="button" data-irregular-delete="${esc(p.id)}" class="text-sm underline text-danger-600">Удалить</button></div>
+    </div>`).join('') : '<p class="text-sm text-dark-800">Добавьте страховку, обучение или другой редкий платёж.</p>';
+  document.querySelectorAll('[data-irregular-edit]').forEach(button => button.addEventListener('click', () => editIrregularPayment(button.dataset.irregularEdit)));
+  document.querySelectorAll('[data-irregular-delete]').forEach(button => button.addEventListener('click', () => deleteIrregularPayment(button.dataset.irregularDelete)));
+  if (!document.getElementById('irregular-start').value) document.getElementById('irregular-start').value = monthKey(currentMonth);
+}
+function resetIrregularForm() {
+  document.getElementById('irregular-form').reset();
+  document.getElementById('irregular-id').value = '';
+  document.getElementById('irregular-start').value = monthKey(currentMonth);
+  document.getElementById('irregular-save').textContent = 'Добавить платёж';
+}
+function editIrregularPayment(id) {
+  const payment = irregularPayments.find(p => p.id === id);
+  if (!payment) return;
+  for (const [field, key] of Object.entries({ id: 'id', name: 'name', amount: 'amount', currency: 'currency', months: 'months', start: 'startMonth' })) {
+    document.getElementById('irregular-' + field).value = payment[key];
+  }
+  document.getElementById('irregular-save').textContent = 'Сохранить изменения';
+  document.getElementById('irregular-name').focus();
+}
+async function saveIrregularPayment() {
+  const generation = themeAuthGeneration;
+  const status = document.getElementById('irregular-status');
+  const id = document.getElementById('irregular-id').value;
+  const payment = {
+    id: id || uid(), name: document.getElementById('irregular-name').value.trim(),
+    amount: Number(document.getElementById('irregular-amount').value),
+    currency: document.getElementById('irregular-currency').value,
+    months: Number(document.getElementById('irregular-months').value),
+    startMonth: document.getElementById('irregular-start').value
+  };
+  if (!window.FinoraPlanning.validPayment(payment)) { status.textContent = 'Проверьте название, сумму, период (2–120 месяцев) и начальный месяц.'; return; }
+  if (!id && irregularPayments.length >= 100) { status.textContent = 'Можно сохранить до 100 нерегулярных платежей.'; return; }
+  if (id && !irregularPayments.some(p => p.id === id)) { status.textContent = 'Платёж больше не существует. Обновите страницу.'; return; }
+  const updated = id ? irregularPayments.map(p => p.id === id ? payment : p) : [...irregularPayments, payment];
+  const button = document.getElementById('irregular-save');
+  button.disabled = true;
+  status.textContent = 'Сохраняем платёж…';
+  try {
+    if (await savePlanningProfile('finora_irregular_payments', updated)) {
+      resetIrregularForm(); renderBudget(); status.textContent = 'Платёж сохранён в учётной записи.';
+    }
+  } catch (_error) { if (generation === themeAuthGeneration) status.textContent = 'Не удалось сохранить платёж. Введённые значения сохранены в форме — повторите попытку.'; }
+  finally { if (generation === themeAuthGeneration) button.disabled = false; }
+}
+async function deleteIrregularPayment(id) {
+  const generation = themeAuthGeneration;
+  const payment = irregularPayments.find(p => p.id === id);
+  if (!payment || !confirm('Удалить «' + payment.name + '» из плана нерегулярных платежей?')) return;
+  const status = document.getElementById('irregular-status');
+  try {
+    if (await savePlanningProfile('finora_irregular_payments', irregularPayments.filter(p => p.id !== id))) {
+      if (document.getElementById('irregular-id').value === id) resetIrregularForm();
+      renderBudget(); status.textContent = 'Платёж удалён из плана.';
+    }
+  } catch (_error) { if (generation === themeAuthGeneration) status.textContent = 'Не удалось удалить платёж. Повторите попытку.'; }
+}
 
 // ==================== DB HELPERS ====================
 function showToast(msg, type = 'error') {
@@ -1446,6 +1695,7 @@ try { themeStorage = window.localStorage; } catch (_error) {}
 const themeController = window.FinoraTheme?.createThemeController?.({
   document,
   storage: themeStorage,
+  defaultAccountTheme: 'classic',
   getRemoteContext: () => themeAuthGeneration,
   canSyncRemote: () => !!themeAuthUser,
   updateRemote: async (theme, generation) => {
@@ -1468,6 +1718,18 @@ function resetAccountData() {
   categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
   categoriesRowId = null;
   budgetTags = ['Москва', 'Казань'];
+  accountDays = [{ day: 10, moveWeekend: true }, { day: 25, moveWeekend: true }];
+  irregularPayments = [];
+  irregularReady = false;
+  planningBusy = false;
+  for (const id of ['settings-save', 'irregular-save']) document.getElementById(id).disabled = false;
+  document.getElementById('settings-theme-retry').classList.add('hidden');
+  for (const id of ['settings-status', 'settings-theme-status', 'irregular-status', 'irregular-list']) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = '';
+  }
+  const form = document.getElementById('irregular-form');
+  if (form?.reset) { form.reset(); document.getElementById('irregular-id').value = ''; }
 }
 
 async function dbUpsert(table, row) {
@@ -1562,6 +1824,7 @@ function showPage(name) {
   if (name === 'debts') renderDebts();
   if (name === 'budget') renderBudget();
   if (name === 'calc') initDailyCalc();
+  if (name === 'settings') renderSettings();
   if (name === 'import') { importRows = []; importRawFile = null; document.getElementById('import-stats').classList.add('hidden'); document.getElementById('import-preview').classList.add('hidden'); document.getElementById('import-empty').classList.add('hidden'); document.getElementById('import-bank-selector').classList.add('hidden'); }
   requestAnimationFrame(() => {
     clearPixelCardAnimations();
@@ -2073,7 +2336,7 @@ if (typeof MutationObserver !== 'undefined') {
 
 function renderCharts(items) {
   // Donut — расходы по категориям за текущий месяц
-  const expenseItems = items.filter(b => b.type === 'expense');
+  const expenseItems = items.filter(b => b.type === 'expense' && (b.currency || 'RUB') === 'RUB');
   const catMap = {};
   expenseItems.forEach(b => {
     catMap[b.category] = (catMap[b.category] || 0) + (parseFloat(b.amount) || 0);
@@ -2110,8 +2373,10 @@ function renderCharts(items) {
     const locale = currentLang === 'de' ? 'de-DE' : currentLang === 'en' ? 'en-US' : 'ru-RU';
     months.push({ key: monthKey(d), label: d.toLocaleString(locale, { month: 'short' }) });
   }
-  const incomes = months.map(m => budgetItems.filter(b => b.type === 'income' && (b.recurring || (b.date && b.date.startsWith(m.key)))).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0));
-  const expenses = months.map(m => budgetItems.filter(b => b.type === 'expense' && (b.recurring || (b.date && b.date.startsWith(m.key)))).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0));
+  const inMonth = (b, key) => (b.currency || 'RUB') === 'RUB' && (b.recurring ? (!b.startMonth || b.startMonth <= key) : b.date?.startsWith(key));
+  const incomes = months.map(m => budgetItems.filter(b => b.type === 'income' && inMonth(b, m.key)).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0));
+  const expenses = months.map(m => budgetItems.filter(b => b.type === 'expense' && inMonth(b, m.key)).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0)
+    + (window.FinoraPlanning.reserves(irregularPayments, m.key).RUB || 0));
 
   if (chartBar) chartBar.destroy();
   chartBar = createThemedChart(document.getElementById('chart-bar'), {
@@ -2136,6 +2401,7 @@ function renderCharts(items) {
 
 function renderBudget() {
   const mk = monthKey(currentMonth);
+  renderIrregularPayments();
   document.getElementById('budget-month-label').textContent = monthLabel(currentMonth);
 
   const items = budgetItems.filter(b => {
@@ -2146,7 +2412,7 @@ function renderBudget() {
       return true;
     }
     return b.date && b.date.startsWith(mk);
-  });
+  }).concat(reserveRows(mk));
 
   const sumByCurrency = (type) => {
     const totals = {};
@@ -2161,12 +2427,13 @@ function renderBudget() {
   const fmtTotals = (obj) => Object.entries(obj).map(([c, v]) => fmt(v, c)).join(' + ') || fmt(0, 'RUB');
 
   document.getElementById('budget-income-total').textContent = fmtTotals(incomeTotals);
-  document.getElementById('budget-expense-total').textContent = fmtTotals(expenseTotals);
+  document.getElementById('budget-expense-total').textContent = irregularReady ? fmtTotals(expenseTotals) : '—';
+  document.getElementById('budget-charts').classList.toggle('hidden', !irregularReady);
 
   // Balance only meaningful if single currency
   const currencies = [...new Set(items.map(b => b.currency || 'RUB'))];
   const balEl = document.getElementById('budget-balance');
-  if (currencies.length === 1) {
+  if (irregularReady && currencies.length === 1) {
     const cur = currencies[0];
     const bal = (incomeTotals[cur] || 0) - (expenseTotals[cur] || 0);
     balEl.textContent = (bal < 0 ? '−' : '') + fmt(Math.abs(bal), cur);
@@ -2189,7 +2456,7 @@ function renderBudget() {
     return da.localeCompare(db);
   });
   items.forEach(item => {
-    const key = `${item.type}:${item.category}`;
+    const key = `${item.type}:${item.category}:${item.currency || 'RUB'}`;
     if (!grouped[key]) grouped[key] = { type: item.type, category: item.category, items: [] };
     grouped[key].items.push(item);
   });
@@ -2218,12 +2485,12 @@ function renderBudget() {
       <div class="px-4 py-3 flex justify-between items-center border-b border-dark-400 last:border-0">
         <div>
           <div class="text-sm font-medium text-dark-900">${esc(item.subcategory || '—')}${item.tag ? `<span class="bg-gold-500/15 text-gold-600 text-xs px-1.5 py-0.5 rounded ml-2">${esc(item.tag)}</span>` : ''}${item.note ? `<span class="section-label ml-2">${esc(item.note)}</span>` : ''}</div>
-          <div class="section-label">${item.recurring ? 'каждое ' + item.recurDay + '-е число' : new Date(item.date).toLocaleDateString('ru-RU')}</div>
+          <div class="section-label">${item.reserve ? 'Плановый резерв · управление в блоке выше' : item.recurring ? 'каждое ' + item.recurDay + '-е число' : new Date(item.date).toLocaleDateString('ru-RU')}</div>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-base font-bold tracking-tight text-${clr}-600">${fmt(item.amount, item.currency || 'RUB')}</span>
-          <button onclick="editBudgetItem('${item.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
-          <button onclick="deleteBudgetItem('${item.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>
+          ${item.reserve ? '' : `<button onclick="editBudgetItem('${item.id}')" aria-label="Редактировать" class="icon-btn edit">${IC.edit}</button>
+          <button onclick="deleteBudgetItem('${item.id}')" aria-label="Удалить" class="icon-btn del">${IC.trash}</button>`}
         </div>
       </div>`;
 
@@ -2527,32 +2794,7 @@ function calcDistribution() {
 }
 
 function nextPayday() {
-  const DAY = 86400000;
-  const now = new Date(); now.setHours(0, 0, 0, 0);
-  const todayMs = now.getTime();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-
-  // Работаем с миллисекундами — никаких мутаций объектов
-  function toFriday(ms) {
-    const dow = new Date(ms).getDay(); // 0=вс, 6=сб
-    if (dow === 6) return ms - DAY;     // сб → пт
-    if (dow === 0) return ms - 2 * DAY; // вс → пт
-    return ms;
-  }
-
-  const candidates = [
-    new Date(y, m,     10).getTime(),
-    new Date(y, m,     25).getTime(),
-    new Date(y, m + 1, 10).getTime(),
-    new Date(y, m + 1, 25).getTime(),
-  ];
-
-  for (const ms of candidates) {
-    const adjusted = toFriday(ms);
-    if (adjusted >= todayMs) return new Date(adjusted);
-  }
-  return new Date(toFriday(candidates[2]));
+  return window.FinoraPlanning.period(accountDays).next;
 }
 
 function renderDebtSummary() {
@@ -2984,12 +3226,13 @@ if ('serviceWorker' in navigator) {
 // ==================== INIT ====================
 async function loadAllData(generation = themeAuthGeneration, userId = themeAuthUser?.id) {
   const authContext = { generation, userId };
-  const [w, r, d, b, c] = await Promise.all([
+  const [w, r, d, b, c, irregular] = await Promise.all([
     sb.from('wallets').select('*').order('sort_order').order('created_at'),
     sb.from('receivables').select('*').order('created_at'),
     sb.from('debts').select('*').order('sort_order').order('created_at'),
     sb.from('budget_items').select('*').order('created_at'),
     sb.from('categories').select('*').single(),
+    sb.from('irregular_payments').select('*').eq('user_id', userId).order('created_at'),
   ]);
   if (!isCurrentAuthContext(authContext)) return false;
 
@@ -3016,6 +3259,8 @@ async function loadAllData(generation = themeAuthGeneration, userId = themeAuthU
   debts = nextDebts;
   budgetItems = nextBudgetItems;
   categories = nextCategories;
+  irregularReady = !irregular.error && Array.isArray(irregular.data);
+  if (irregularReady) irregularPayments = window.FinoraPlanning.payments(irregular.data.map(p => ({ ...p, amount: Number(p.amount), startMonth: p.start_month })));
   categoriesRowId = nextCategoriesRowId;
   budgetTags = nextBudgetTags;
 
@@ -3158,9 +3403,9 @@ async function renderDashboard() {
       const dayWord = days % 100 >= 11 && days % 100 <= 19 ? 'дней' : days % 10 === 1 ? 'день' : days % 10 >= 2 && days % 10 <= 4 ? 'дня' : 'дней';
       metaEl.textContent = `осталось ${days} ${dayWord} до ${dateStr}`;
       balEl.textContent = fmt(dailySum, 'RUB');
-      // progress: how far into the pay period we are (assume 15-day half-months)
-      const elapsed = Math.max(0, 15 - days);
-      const pct = Math.min(100, Math.round(elapsed / 15 * 100));
+      const periodLength = window.FinoraPlanning.period(accountDays).length;
+      const elapsed = Math.max(0, periodLength - days);
+      const pct = Math.min(100, Math.round(elapsed / periodLength * 100));
       barEl.style.width = pct + '%';
     } else {
       amountEl.textContent = '—'; metaEl.textContent = ''; balEl.textContent = ''; barEl.style.width = '0%';
@@ -3172,7 +3417,9 @@ async function renderDashboard() {
   // --- Month Balance ---
   const now = new Date();
   const mk = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const monthItems = budgetItems.filter(b => b.recurring || (b.date && b.date.startsWith(mk)));
+  const monthItems = budgetItems.filter(b => (b.currency || 'RUB') === 'RUB' &&
+    (b.recurring ? (!b.startMonth || b.startMonth <= mk) : b.date && b.date.startsWith(mk)))
+    .concat(reserveRows(mk).filter(b => b.currency === 'RUB'));
   const income = monthItems.filter(b => b.type === 'income').reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
   const expense = monthItems.filter(b => b.type === 'expense').reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
   document.getElementById('dash-month-income').textContent = fmt(income, 'RUB');
@@ -3189,6 +3436,12 @@ async function renderDashboard() {
   } else {
     monthBar.style.width = expense > 0 ? '100%' : '0%';
     monthBar.className = 'h-2 rounded-full transition-all bg-danger-600';
+  }
+  if (!irregularReady) {
+    document.getElementById('dash-month-expense').textContent = '—';
+    resultEl.textContent = 'Не загружен резерв. Обновите страницу.';
+    resultEl.className = 'text-sm text-dark-800';
+    monthBar.style.width = '0%';
   }
 
   // --- Debt Load ---
@@ -3475,11 +3728,13 @@ sb.auth.onAuthStateChange(async (event, session) => {
 
   if (session && authIdentityChanged) {
     resetAccountData();
+    loadPlanningProfile(session.user);
     loading.classList.remove('hidden');
     nav.style.display = 'none';
   }
 
   if (session) {
+    if (!planningBusy && !authIdentityChanged) loadPlanningProfile(session.user);
     authScreen.classList.add('hidden');
     const generation = themeAuthGeneration;
     const userId = themeAuthUser.id;
