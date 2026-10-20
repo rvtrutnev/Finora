@@ -154,12 +154,17 @@ test('does not intercept Supabase or CDN requests', async () => {
 test('install precaches the planning module alongside the app shell', async () => {
   const worker = createWorker({ fetchImpl: async () => new Response('online') });
   await worker.dispatchLifecycle('install');
-  assert.deepEqual(worker.openedCaches, ['finora-v5']);
+  assert.deepEqual(worker.openedCaches, ['finora-v6']);
   assert.deepEqual(worker.precachedAssets, [[
     './index.html',
     './styles/themes.css',
     './js/theme.js',
     './js/planning.js',
+    './js/import-core.js',
+    './js/import-pdf.js',
+    './js/import-ui.js',
+    './vendor/pdfjs/pdf.mjs',
+    './vendor/pdfjs/pdf.worker.mjs',
     './logo.png',
     './logo-pixel.svg',
     './fonts/press-start-2p/PressStart2P-Regular.woff2',
@@ -170,8 +175,8 @@ test('install precaches the planning module alongside the app shell', async () =
 test('activation deletes only obsolete Finora caches', async () => {
   const worker = createWorker({
     fetchImpl: async () => new Response('online'),
-    cacheKeys: ['finora-v1', 'finora-v2', 'finora-v3', 'finora-v4', 'finora-v5', 'other-app-v1']
+    cacheKeys: ['finora-v1', 'finora-v2', 'finora-v3', 'finora-v4', 'finora-v5', 'finora-v6', 'other-app-v1']
   });
   await worker.dispatchLifecycle('activate');
-  assert.deepEqual(worker.deletedCaches, ['finora-v1', 'finora-v2', 'finora-v3', 'finora-v4']);
+  assert.deepEqual(worker.deletedCaches, ['finora-v1', 'finora-v2', 'finora-v3', 'finora-v4', 'finora-v5']);
 });
