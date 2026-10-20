@@ -29,18 +29,36 @@
   };
   const datePattern=/^\d{2}\.\d{2}\.\d{4}(?:\s|$)/;
   const clean=value=>String(value||'').replace(/\s+/g,' ').trim();
-  function detect(text,pages){
-    if(/альфа[ -]?банк/i.test(text))return 'alfa';
-    if(/отп\s*банк/i.test(text))return 'otp';
-    if(/\bvtb\b|втб/i.test(text))return 'vtb';
-    if(/т[ -]банк|тинькофф|t[ -]bank/i.test(text))return 'tbank';
-    // The supplied OTP template uses an image logo. Identify its text/table
-    // combination, not arbitrary occurrences of "отп" in sender descriptions.
-    if(/счет-выписка/i.test(text)&&/расход/i.test(text)&&/приход/i.test(text)&&/назначение платежа/i.test(text)){
-      const page=pages[0],scale=841.89/page.width;
-      if(page.width>=page.height&&[[116,/дата операции/i],[368,/расход/i],[490,/приход/i],[625,/назначение платежа/i]].every(([x,pattern])=>page.items.some(i=>pattern.test(i.str)&&Math.abs(i.transform?.[4]*scale-x)<10)))return 'otp';
+  const headerChecks={
+    tbank:[[[50,120],/^дата и время операции$/],[[120,195],/^дата списания$/],[[195,290],/^сумма в валюте операции$/],[[290,385],/^сумма операции в валюте карты$/],[[385,495],/^описание операции$/],[[495,550],/^номер карты$/]],
+    alfa:[[[20,90],/^дата проводки$/],[[90,185],/^код операции$/],[[185,500],/^описание$/],[[500,585],/^сумма в валюте счета$/]],
+    vtb:[[[20,85],/^дата и время операции$/],[[85,152],/^дата обработки банком$/],[[152,235],/^сумма операции в валюте операции$/],[[235,390],/^сумма операции в валюте счета\/карты приход расход$/],[[270,305],/^приход$/],[[350,390],/^расход$/],[[390,500],/^описание операции$/],[[500,585],/^наименование получателя\/ ?отправителя$/]],
+    otp:[[[60,110],/^номер$/],[[110,200],/^дата операции$/],[[200,360],/^операция$/],[[360,485],/^расход$/],[[485,620],/^приход$/],[[620,825],/^назначение платежа$/]]
+  };
+  function pageItems(page,bank){
+    const scale=layouts[bank].width/page.width;
+    return page.items.filter(i=>clean(i.str)&&Array.isArray(i.transform)).map(i=>({str:i.str,x:i.transform[4]*scale,top:(page.height-i.transform[5])*scale})).filter(i=>Number.isFinite(i.x)&&Number.isFinite(i.top));
+  }
+  function headerTop(page,bank){
+    if(!Number.isFinite(page.width)||!Number.isFinite(page.height)||page.width<=0||page.height<=0)return null;
+    if((bank==='otp'&&page.width<page.height)||(bank!=='otp'&&page.width>page.height))return null;
+    const items=pageItems(page,bank),checks=headerChecks[bank],maxOffset=bank==='vtb'?25:15;
+    const candidates=cellsIn(items,checks[0][0]).filter(i=>/^дата(?:\s|$)/i.test(clean(i.str)));
+    // OTP's first column is the sequential number, so its date header is second.
+    if(bank==='otp')candidates.push(...cellsIn(items,[110,200]).filter(i=>/^дата операции$/i.test(clean(i.str))));
+    for(const candidate of candidates){
+      const region=items.filter(i=>i.top>=candidate.top-(bank==='vtb'?6:0)&&i.top<=candidate.top+maxOffset);
+      if(checks.every(([range,pattern])=>pattern.test(textOf(cellsIn(region,range)).toLowerCase().replace(/ё/g,'е'))))return candidate.top;
     }
-    throw new Error('Неизвестный формат PDF. Поддерживаются предоставленные форматы Т-Банка, Альфа, ВТБ и ОТП.');
+    return null;
+  }
+  function detect(pages){
+    // Only the complete, positioned table header identifies the format. The
+    // image-only logos in supplied OTP/VTB files need no guessed OCR; transaction
+    // descriptions and counterparties can never select or override an adapter.
+    const matches=Object.keys(layouts).filter(bank=>headerTop(pages[0],bank)!==null);
+    if(matches.length!==1)throw new Error('Неизвестный формат или изменённая структура колонок PDF. Поддерживаются предоставленные шаблоны Т-Банка, Альфа, ВТБ и ОТП.');
+    return matches[0];
   }
   function cellsIn(items,range){return items.filter(i=>i.x>=range[0]&&i.x<range[1]);}
   function textOf(items){return clean([...items].sort((a,b)=>Math.abs(a.top-b.top)>2?a.top-b.top:a.x-b.x).map(i=>i.str).join(' '));}
@@ -65,7 +83,7 @@
   function parsePages(pages){
     if(!Array.isArray(pages)||!pages.length||!pages.some(p=>p.items?.some(i=>clean(i.str))))throw new Error('В PDF нет текста. Сканированные документы пока не поддерживаются.');
     if(pages.length>MAX_PAGES)throw new Error('Слишком много страниц PDF (не более 200).');
-    const bank=detect(pages.slice(0,2).flatMap(p=>p.items.map(i=>i.str)).join(' '),pages);
+    const bank=detect(pages);
     const layout=layouts[bank],warnings=[],blocks=[];
     let previous=null,totalItems=0;
     for(let p=0;p<pages.length;p++){
@@ -92,6 +110,11 @@
         if(summary)pageBottom=Math.min(pageBottom,summary.top-2);
       }
       const anchors=cellsIn(items,layout.date).filter(i=>datePattern.test(clean(i.str))).sort((a,b)=>a.top-b.top);
+      // The supplied OTP report prints its table header only on page one.
+      // A later page may omit that header, but a present/changed header is never
+      // allowed to redefine the account amount columns validated on page one.
+      const headerlessOtpContinuation=bank==='otp'&&p>0&&!items.some(i=>i.top<(anchors[0]?.top||0)&&/^(?:дата операции|расход|приход|назначение платежа)$/i.test(clean(i.str)));
+      if(anchors.length&&headerTop(page,bank)===null&&!headerlessOtpContinuation)throw new Error(`Изменённая структура колонок PDF на странице ${page.pageNumber||p+1}.`);
       const unique=anchors.filter((a,i)=>!i||Math.abs(a.top-anchors[i-1].top)>2);
       const rowLines=bank==='vtb'?(page.horizontalLines||[]).filter(l=>Math.abs(l.y1-l.y2)<.2&&l.x1*scale<=400&&l.x2*scale>=495).map(l=>(page.height-l.y1)*scale).sort((a,b)=>a-b):[];
       const rowStart=anchor=>rowLines.filter(top=>top<anchor.top).at(-1)??anchor.top-3;
@@ -205,7 +228,7 @@
         onProgress?.({page:n,totalPages:doc.numPages,progress:n/doc.numPages});
         page.cleanup();
       }
-      if(detect(pages.slice(0,2).flatMap(p=>p.items.map(i=>i.str)).join(' '),pages)==='vtb'){
+      if(detect(pages)==='vtb'){
         for(let n=1;n<=doc.numPages;n++){
           const page=await doc.getPage(n);
           pages[n-1].horizontalLines=horizontalRules(await page.getOperatorList(),lib.OPS);

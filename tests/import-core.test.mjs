@@ -35,6 +35,12 @@ test('typed categories respect valid description rules then MCC and never use a 
 test('duplicate signature is canonical but does not claim identity or collapse occurrences', () => {
   assert.equal(core.duplicateSignature?.({date:'2026-01-02',amountMinor:123,currency:'RUR',type:'expense',desc:' TEST  Shop '}), '["2026-01-02","expense","RUB",123,"test shop"]');
 });
+test('actual default Еда subcategories are proposed as validated category/subcategory pairs', () => {
+  const categories={expense:[{name:'Еда',subcategories:['Продукты','Рестораны','Доставка']}],income:[]};
+  for(const [row,want]of [[{mcc:'5411',desc:'TEST'},'Продукты'],[{mcc:'5812',desc:'TEST'},'Рестораны'],[{desc:'Доставка еды TEST'},'Доставка'],[{desc:'ВкусВилл TEST'},'Продукты']])
+    assert.deepEqual(core.suggestCategory({...row,type:'expense'},categories,[]),{category:'Еда',subcategory:want});
+  assert.deepEqual(core.suggestCategory({type:'expense',mcc:'5411',desc:'TEST'},{expense:[{name:'Еда',subcategories:['Рестораны']}],income:[]},[]),{category:'',subcategory:''});
+});
 test('CSV handles quoted delimiters/newlines and uses account rather than operation amount', () => {
   const result = core.parseDelimited?.('Дата операции;Дата платежа;Номер карты;Статус;Сумма операции;Валюта операции;Сумма платежа;Валюта платежа;Кешбэк;Категория;MCC;Описание\r\n02.01.2026 10:00;03.01.2026;1234;OK;-2,00;USD;-180,50;RUR;;;5411;"TEST;\nSHOP ""ONE"""\r\n02.01.2026;03.01.2026;1234;Отменена;-3;USD;-270;RUB;;;;Ignored', 'tbank');
   assert.equal(result?.rows.length,1);

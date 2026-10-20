@@ -97,14 +97,15 @@
       if (matches) { const result=target(rule.category,rule.subcategory||'');if (result) return result; }
     }
     const suggestions = row.type==='expense' ? [
-      [/^(5411|5422|5441|5451|5462|5499)$/,['Продукты','Продукты питания']],
-      [/^(5811|5812|5813|5814)$/,['Кафе','Рестораны','Кафе и рестораны']],
+      [/^(5411|5422|5441|5451|5462|5499)$/, [['Еда','Продукты'],'Продукты','Продукты питания']],
+      [/^(5811|5812|5813|5814)$/, [['Еда','Рестораны'],'Кафе','Рестораны','Кафе и рестораны']],
       [/^(5912)$/,['Здоровье','Медицина']],
       [/^(4111|4121|4131|4789)$/,['Транспорт']]
     ] : [];
-    for (const [mcc,names] of suggestions) if (mcc.test(String(row.mcc))) for (const name of names) { const result=target(name);if(result)return result; }
-    const keywords=row.type==='expense' ? [[/продукт|supermarket|пятероч|перекрест|вкусвилл/i,['Продукты','Продукты питания']],[/кафе|ресторан|coffee|cafe/i,['Кафе','Кафе и рестораны']],[/аптек|pharma/i,['Здоровье','Медицина']],[/такси|taxi|метро/i,['Транспорт']]] : [[/зарплат|заработн|salary/i,['Зарплата']]];
-    for (const [pattern,names] of keywords) if(pattern.test(row.desc)) for(const name of names){const result=target(name);if(result)return result;}
+    const proposal=value=>Array.isArray(value)?target(value[0],value[1]):target(value);
+    for (const [mcc,names] of suggestions) if (mcc.test(String(row.mcc))) for (const name of names) { const result=proposal(name);if(result)return result; }
+    const keywords=row.type==='expense' ? [[/доставк.*ед|delivery.*food|яндекс[ .]*ед|delivery club/i,[['Еда','Доставка']]],[/продукт|supermarket|пятероч|перекрест|вкусвилл/i,[['Еда','Продукты'],'Продукты','Продукты питания']],[/кафе|ресторан|coffee|cafe/i,[['Еда','Рестораны'],'Кафе','Кафе и рестораны']],[/аптек|pharma/i,['Здоровье','Медицина']],[/такси|taxi|метро/i,['Транспорт']]] : [[/зарплат|заработн|salary/i,['Зарплата']]];
+    for (const [pattern,names] of keywords) if(pattern.test(row.desc)) for(const name of names){const result=proposal(name);if(result)return result;}
     return empty;
   }
   function splitDelimited(text) {
