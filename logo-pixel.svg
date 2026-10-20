@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <title>Finora Pixel Retro</title>
+  <path fill="#080907" d="M6 2h20v2h2v2h2v20h-2v2h-2v2H6v-2H4v-2H2V6h2V4h2z"/>
+  <path fill="#22b8b0" fill-rule="evenodd" d="M6 2h20v2h2v2h2v20h-2v2h-2v2H6v-2H4v-2H2V6h2V4h2z M7 4h18v2h2v2h1v16h-1v2h-2v2H7v-2H5v-2H4V8h1V6h2z"/>
+  <path fill="#e9dfac" d="M9 8h14v4H13v5h6v4h-6v4H9z M17 15h2v2h-2z M20 13h2v6h-2z M23 11h2v6h-2z"/>
+</svg>

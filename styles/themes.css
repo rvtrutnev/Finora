@@ -283,6 +283,21 @@
 [data-theme="pixel-retro"] :is(.hover\:bg-dark-400:hover, .icon-btn:hover) { background-color: var(--color-surface-raised); }
 [data-theme="pixel-retro"] .text-dark-600 { color: var(--color-text-muted); }
 
+.pixel-brand-wordmark { display: none; }
+[data-theme="pixel-retro"] .pixel-brand-wordmark {
+  display: block;
+  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 2px;
+  color: #e9dfac;
+}
+[data-theme="pixel-retro"] [data-brand-logo] {
+  border-radius: 0;
+  image-rendering: pixelated;
+}
+
 @media (max-width: 767px) {
   nav > div { flex-wrap: wrap; }
   nav [id^="nav-"] { min-width: 4.5rem; }
