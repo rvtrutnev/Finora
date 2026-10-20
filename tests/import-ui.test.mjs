@@ -5,6 +5,35 @@ const require=createRequire(import.meta.url),ui=require('../js/import-ui.js');
 const csv='Дата операции;Описание операции;Сумма в валюте счета;Валюта счета\n20.10.2026;Shop;-10;RUB\n20.10.2026;Shop;-10;RUB';
 const file=(text=csv)=>({name:'test.csv',arrayBuffer:async()=>new TextEncoder().encode(text).buffer});
 const defer=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
+test('category and rule drafts survive validation/network errors and unrelated renders, then clear',async()=>{
+ const {c}=setup();await c.loadFile(file());
+ await c.createCategory(0,'New','Child');
+ assert.deepEqual(c.state.categoryDraft,{category:'New',subcategory:'Child'});
+ c.updateRow(1,{checked:false});assert.equal(c.state.categoryDraft.subcategory,'Child');
+ await c.createRule(0,'mcc','123');
+ assert.deepEqual(c.state.ruleDraft,{matchType:'mcc',pattern:'123'});
+ c.updateRow(0,{category:'Food'});await c.createRule(0,'description','Shop');
+ assert.equal(c.state.ruleDraft,null);
+ c.reset();assert.equal(c.state.categoryDraft,null);assert.equal(c.state.ruleDraft,null);
+});
+test('real controller form events retain input through errors and clear on cancel/new file',async()=>{
+ const events={};const root={innerHTML:'',addEventListener:(name,handler)=>(events[name]||=[]).push(handler),querySelector:()=>null};
+ const dispatch=(name,target)=>{for(const handler of events[name]||[])handler({target,preventDefault(){}});};
+ const button=key=>({dataset:{[key]:'0'},hasAttribute:name=>name===`data-${key}`,closest(){return this;}});
+ const {c}=setup({root,saveRule:async()=>{throw Error('offline');}});await c.loadFile(file());
+ dispatch('click',button('category'));
+ const categoryForm={hasAttribute:name=>name==='data-category-form',elements:{category:{value:'New & name'},subcategory:{value:'Child'}}};
+ dispatch('input',{closest:()=>categoryForm});
+ await c.createCategory(0,'New & name','Child');
+ assert.match(root.innerHTML,/value="New &amp; name"/);assert.match(root.innerHTML,/value="Child"/);
+ dispatch('click',button('cancel'));assert.equal(c.state.categoryDraft,null);
+ c.updateRow(0,{category:'Food'});dispatch('click',button('rule'));
+ const ruleForm={hasAttribute:name=>name==='data-rule-form',elements:{matchType:{value:'mcc'},pattern:{value:'5411'}}};
+ dispatch('change',{closest:()=>ruleForm,hasAttribute:()=>false,dataset:{}});
+ await c.createRule(0,'mcc','5411');
+ assert.match(root.innerHTML,/value="mcc" selected/);assert.match(root.innerHTML,/value="5411"/);
+ await c.loadFile(file());assert.equal(c.state.ruleDraft,null);assert.equal(c.state.categoryDraft,null);
+});
 function setup(extra={}) {
  let context={userId:'a',generation:1};const writes=[];
  const c=ui.create({getContext:()=>context,getCategories:()=>({expense:[{name:'Food',subcategories:['Shop']}],income:[]}),getBudgetItems:()=>[],loadRules:async()=>[],saveCategory:async()=>{throw Error('offline');},saveRule:async()=>{},saveOperation:async(payload)=>{writes.push(payload);return {status:'created',operation:{id:payload.importKey}};},...extra});

@@ -18,13 +18,14 @@
   function create(options){
     const {root,getContext,getCategories,getBudgetItems,saveCategory,loadRules,loadImportKeys,saveRule,saveOperation,onSaved}=options;
     let epoch=0,rules=[],savedText=null,fileHash=null,knownKeys=new Set();
-    const state={rows:[],status:'',ruleStatus:'',bank:null,warnings:[],busy:false,loading:false,skipIncome:false,manualBank:false,categoryRow:null,ruleRow:null};
+    const state={rows:[],status:'',ruleStatus:'',bank:null,warnings:[],busy:false,loading:false,skipIncome:false,manualBank:false,categoryRow:null,ruleRow:null,categoryDraft:null,ruleDraft:null};
     const context=()=>({...getContext()});
     const valid=(c,e)=>e===epoch&&!!c.userId&&c.userId===getContext().userId&&c.generation===getContext().generation;
     const categories=type=>getCategories()?.[type]||[];
     const targetValid=r=>categories(r.type).some(c=>c.name===r.category&&(!r.subcategory||(c.subcategories||[]).some(s=>(typeof s==='string'?s:s.name)===r.subcategory)));
     const visible=r=>!state.skipIncome||r.type==='expense';
-    function reset(){epoch++;rules=[];savedText=null;fileHash=null;knownKeys=new Set();Object.assign(state,{rows:[],status:'',ruleStatus:'',bank:null,warnings:[],busy:false,loading:false,skipIncome:false,manualBank:false,categoryRow:null,ruleRow:null});render();}
+    function closeForms(){state.categoryRow=state.ruleRow=null;state.categoryDraft=state.ruleDraft=null;}
+    function reset(){epoch++;rules=[];savedText=null;fileHash=null;knownKeys=new Set();closeForms();Object.assign(state,{rows:[],status:'',ruleStatus:'',bank:null,warnings:[],busy:false,loading:false,skipIncome:false,manualBank:false});render();}
     function applyParsed(result){
       state.bank=result.bank;state.warnings=result.warnings||[];state.manualBank=false;
       const known=new Set((getBudgetItems()||[]).map(signature));
@@ -77,21 +78,23 @@
     }
     async function createCategory(i,name,subcategory=''){
       if(state.busy||state.loading)return;const r=state.rows[i];if(!r)return;
+      state.categoryDraft={category:String(name),subcategory:String(subcategory)};
       name=String(name).trim();subcategory=String(subcategory).trim();if(!name){state.status='Введите название категории.';render();return;}
       const c=context(),e=epoch;state.busy=true;state.status='Сохранение категории…';render();
       try{await saveCategory({type:r.type,name,subcategory},c);if(!valid(c,e))return;
         // Adapter publishes the server-confirmed category tree before resolving.
         if(!categories(r.type).some(x=>x.name===name))throw Error('Сервер не подтвердил категорию');
-        r.category=name;r.subcategory=subcategory;state.categoryRow=null;state.status='Категория сохранена.';
+        r.category=name;r.subcategory=subcategory;state.categoryRow=null;state.categoryDraft=null;state.status='Категория сохранена.';
       }catch(error){if(valid(c,e))state.status='Категория не сохранена: '+error.message;}
       finally{if(valid(c,e)){state.busy=false;render();}}
     }
     async function createRule(i,matchType,pattern){
       if(state.busy||state.loading)return;const r=state.rows[i];if(!r)return;
+      state.ruleDraft={matchType,pattern:String(pattern)};
       pattern=String(pattern).trim();if(!targetValid(r)||!pattern||!['description','mcc'].includes(matchType)||(matchType==='mcc'&&!/^\d{4}$/.test(pattern))){state.ruleStatus='Выберите существующую категорию и заполните текст или MCC из 4 цифр.';render();return;}
       const rule={type:r.type,matchType,pattern,category:r.category,subcategory:r.subcategory||''},c=context(),e=epoch;
       state.busy=true;state.ruleStatus='Сохранение правила…';render();
-      try{await saveRule(rule,c);if(!valid(c,e))return;rules.push(rule);state.ruleRow=null;state.ruleStatus='Правило сохранено. Применится при следующем чтении выписки.';}
+      try{await saveRule(rule,c);if(!valid(c,e))return;rules.push(rule);state.ruleRow=null;state.ruleDraft=null;state.ruleStatus='Правило сохранено. Применится при следующем чтении выписки.';}
       catch(error){if(valid(c,e))state.ruleStatus='Правило не сохранено: '+error.message+'. Операции можно сохранить отдельно.';}
       finally{if(valid(c,e)){state.busy=false;render();}}
     }
@@ -115,6 +118,18 @@
         }
         state.status=`Сохранено: ${created}. Уже импортировано из этого файла: ${existing}. Требуют повторной попытки: ${failed}.`;
       }finally{if(valid(c,e)){state.busy=false;render();}}
+    }
+    function renderForms(attrs){
+      return `${state.categoryRow!==null?`<form data-category-form class="card rounded-xl p-4 mt-4"><p class="mb-3 text-dark-900">Новая категория (${state.rows[state.categoryRow]?.type==='expense'?'расход':'доход'}). Для подкатегории укажите существующую категорию.</p>
+          <label class="block mb-3">Категория<input name="category" required maxlength="120" value="${esc(state.categoryDraft?.category)}" class="${control} block w-full"></label>
+          <label class="block mb-3">Подкатегория (необязательно)<input name="subcategory" maxlength="120" value="${esc(state.categoryDraft?.subcategory)}" class="${control} block w-full"></label>
+          <button class="btn-gold px-4 py-2 rounded-lg"${attrs}>Сохранить категорию</button>
+          <button type="button" data-cancel class="${control}"${attrs}>Отмена</button></form>`:''}
+        ${state.ruleRow!==null?`<form data-rule-form class="card rounded-xl p-4 mt-4"><p class="mb-3 text-dark-900">Правило для ${state.rows[state.ruleRow]?.type==='expense'?'расходов':'доходов'} → ${esc(state.rows[state.ruleRow]?.category||'сначала выберите категорию')}. Текст сопоставляется по вхождению без учёта регистра, MCC — точно.</p>
+          <label class="block mb-3">Условие<select name="matchType" class="${control} block"><option value="description"${state.ruleDraft?.matchType==='description'?' selected':''}>Описание содержит</option><option value="mcc"${state.ruleDraft?.matchType==='mcc'?' selected':''}>MCC равен</option></select></label>
+          <label class="block mb-3">Текст или MCC<input name="pattern" required maxlength="500" value="${esc(state.ruleDraft?.pattern)}" class="${control} block w-full"></label>
+          <button class="btn-gold px-4 py-2 rounded-lg"${attrs}>Сохранить правило</button>
+          <button type="button" data-cancel class="${control}"${attrs}>Отмена</button></form>`:''}`;
     }
     function render(){
       if(!root)return;
@@ -148,15 +163,45 @@
               <select data-field="subcategory" aria-label="Подкатегория операции ${i+1}" class="${control} w-full mb-2"${disabled||r.saved?' disabled':''}>${opts((categories(r.type).find(c=>c.name===r.category)?.subcategories||[]).map(s=>typeof s==='string'?s:s.name),r.subcategory,'Без подкатегории')}</select>
               <button data-category="${i}" class="text-gold-600 underline"${disabled||r.saved?' disabled':''}>Создать категорию / подкатегорию</button></td>
             <td class="p-3 align-top" style="min-width:14rem">${r.warnings.map(w=>`<p class="text-danger-600 mb-2">${esc(w)}</p>`).join('')}${r.ambiguous?'<p class="text-danger-600 mb-2">Возможное совпадение с бюджетом / другой выпиской. Проверьте, нужна ли ещё одна операция.</p>':''}${r.warnings.length||r.ambiguous?`<label class="block mb-3"><input type="checkbox" data-field="confirmed"${r.confirmed?' checked':''}${disabled||r.saved?' disabled':''}> Проверено, сохранить выбранную операцию</label>`:''}<button data-rule="${i}" class="text-gold-600 underline"${disabled||r.saved?' disabled':''}>Создать правило</button></td></tr>`).join('')}</tbody></table></div>`:''}
-        ${state.categoryRow!==null?`<form data-category-form class="card rounded-xl p-4 mt-4"><p class="mb-3 text-dark-900">Новая категория (${state.rows[state.categoryRow]?.type==='expense'?'расход':'доход'}). Для подкатегории укажите существующую категорию.</p><label class="block mb-3">Категория<input name="category" required maxlength="120" value="${esc(state.rows[state.categoryRow]?.category)}" class="${control} block w-full"></label><label class="block mb-3">Подкатегория (необязательно)<input name="subcategory" maxlength="120" class="${control} block w-full"></label><button class="btn-gold px-4 py-2 rounded-lg"${attrs}>Сохранить категорию</button> <button type="button" data-cancel class="${control}"${attrs}>Отмена</button></form>`:''}
-        ${state.ruleRow!==null?`<form data-rule-form class="card rounded-xl p-4 mt-4"><p class="mb-3 text-dark-900">Правило для ${state.rows[state.ruleRow]?.type==='expense'?'расходов':'доходов'} → ${esc(state.rows[state.ruleRow]?.category||'сначала выберите категорию')}. Текст сопоставляется по вхождению без учёта регистра, MCC — точно.</p><label class="block mb-3">Условие<select name="matchType" class="${control} block"><option value="description">Описание содержит</option><option value="mcc">MCC равен</option></select></label><label class="block mb-3">Текст или MCC<input name="pattern" required maxlength="500" value="${esc(state.rows[state.ruleRow]?.desc)}" class="${control} block w-full"></label><button class="btn-gold px-4 py-2 rounded-lg"${attrs}>Сохранить правило</button> <button type="button" data-cancel class="${control}"${attrs}>Отмена</button></form>`:''}`;
+        ${renderForms(attrs)}`;
       if(focusField&&focusRow!==undefined)root.querySelector(`[data-row="${focusRow}"] [data-field="${focusField}"]`)?.focus();
       else if(focusSkip)root.querySelector('[data-skip]')?.focus();else if(focusAll)root.querySelector('[data-all]')?.focus();
     }
+    function rememberDraft(event){
+      const form=event.target.closest?.('form');
+      if(form?.hasAttribute('data-category-form')){
+        state.categoryDraft={category:form.elements.category.value,subcategory:form.elements.subcategory.value};
+      }else if(form?.hasAttribute('data-rule-form')){
+        state.ruleDraft={matchType:form.elements.matchType.value,pattern:form.elements.pattern.value};
+      }
+    }
+    function handleClick(event){
+      const el=event.target.closest('button');
+      if(!el)return;
+      if(el.hasAttribute('data-save'))save();
+      else if(el.dataset.bank)withBank(el.dataset.bank);
+      else if(el.hasAttribute('data-category')){
+        closeForms();state.categoryRow=Number(el.dataset.category);
+        state.categoryDraft={category:state.rows[state.categoryRow]?.category||'',subcategory:''};
+        render();root.querySelector('[data-category-form] input')?.focus();
+      }else if(el.hasAttribute('data-rule')){
+        closeForms();state.ruleRow=Number(el.dataset.rule);
+        state.ruleDraft={matchType:'description',pattern:state.rows[state.ruleRow]?.desc||''};
+        render();root.querySelector('[data-rule-form] select')?.focus();
+      }else if(el.hasAttribute('data-cancel')){closeForms();render();}
+    }
+    function handleSubmit(event){
+      event.preventDefault();rememberDraft(event);
+      const form=event.target;
+      if(form.hasAttribute('data-category-form'))createCategory(state.categoryRow,state.categoryDraft.category,state.categoryDraft.subcategory);
+      else if(form.hasAttribute('data-rule-form'))createRule(state.ruleRow,state.ruleDraft.matchType,state.ruleDraft.pattern);
+    }
     if(root){
       root.addEventListener('change',event=>{const el=event.target;if(el.id==='bank-import-file')loadFile(el.files[0]);else if(el.hasAttribute('data-skip')){state.skipIncome=el.checked;render();}else if(el.hasAttribute('data-all')){state.rows.forEach(r=>{if(visible(r)&&!r.saved)r.checked=el.checked;});render();}else if(el.dataset.field)updateRow(Number(el.closest('[data-row]').dataset.row),{[el.dataset.field]:el.type==='checkbox'?el.checked:el.value});});
-      root.addEventListener('click',event=>{const el=event.target.closest('button');if(!el)return;if(el.hasAttribute('data-save'))save();else if(el.dataset.bank)withBank(el.dataset.bank);else if(el.hasAttribute('data-category')){state.categoryRow=Number(el.dataset.category);state.ruleRow=null;render();root.querySelector('[data-category-form] input')?.focus();}else if(el.hasAttribute('data-rule')){state.ruleRow=Number(el.dataset.rule);state.categoryRow=null;render();root.querySelector('[data-rule-form] select')?.focus();}else if(el.hasAttribute('data-cancel')){state.categoryRow=state.ruleRow=null;render();}});
-      root.addEventListener('submit',event=>{event.preventDefault();const form=event.target;if(form.hasAttribute('data-category-form'))createCategory(state.categoryRow,form.elements.category.value,form.elements.subcategory.value);else if(form.hasAttribute('data-rule-form'))createRule(state.ruleRow,form.elements.matchType.value,form.elements.pattern.value);});
+      root.addEventListener('input',rememberDraft);
+      root.addEventListener('change',rememberDraft);
+      root.addEventListener('click',handleClick);
+      root.addEventListener('submit',handleSubmit);
       root.addEventListener('dragover',event=>{event.preventDefault();});
       root.addEventListener('drop',event=>{event.preventDefault();if(!state.busy)loadFile(event.dataTransfer.files[0]);});
     }

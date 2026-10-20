@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
+test('T-Bank admits only known completed CSV statuses and visibly excludes all others',()=>{
+  const result=core.parseDelimited('Дата операции;Описание;Сумма;Валюта;Статус\n02.01.2026;Completed;-1;RUB;OK\n02.01.2026;Completed;-2;RUB;Выполнен\n02.01.2026;Cancelled;-3;RUB;Отменена\n02.01.2026;Pending;-4;RUB;В обработке\n02.01.2026;Unknown;-5;RUB;Other','tbank');
+  assert.deepEqual(result.rows.map(r=>r.amountMinor),[100,200]);
+  assert.equal(result.warnings.length,3);
+});
 let core = {};
 try { core = require('../js/import-core.js'); } catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
 

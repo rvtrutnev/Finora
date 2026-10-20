@@ -80,10 +80,35 @@
   function isHeading(item){
     return /^(?:дата(?:\s|$)|операции$|дата и время|списания$|обработки|банком$|сумма(?:\s|$)|в валюте|валюта|описание(?:\s|$)|номер карты|карты$|код операции|назначение платежа|приход$|расход$|получателя|наименование|операция$|номер$)/i.test(clean(item.str));
   }
+  function otpAccountCurrency(pages){
+    const currencies=new Set();
+    for(const page of pages){
+      const top=headerTop(page,'otp');
+      if(top===null)continue;
+      const metadata=pageItems(page,'otp').filter(i=>i.top<top-3);
+      const lines=[];
+      for(const item of metadata){
+        let line=lines.find(line=>Math.abs(line.top-item.top)<3);
+        if(!line){line={top:item.top,items:[]};lines.push(line);}
+        line.items.push(item);
+      }
+      for(const line of lines){
+        const text=textOf(line.items);
+        if(!/^(?:валюта(?:\s+сч[её]та)?|сч[её]т)\s*:/i.test(text)&&!/^валюта\s+(?:RUB|RUR|USD|EUR)\b/i.test(text))continue;
+        for(const token of text.match(/\b[A-Z]{3}\b|₽|€|руб\.?/gi)||[]){
+          const currency=/^руб/i.test(token)?'RUB':core.normalizeCurrency(token);
+          if(currency)currencies.add(currency);
+        }
+      }
+    }
+    if(currencies.size!==1)throw new Error('Валюта счёта ОТП отсутствует или противоречива. Экспортируйте выписку с однозначной отметкой «Валюта счета: RUB/USD/…» или «Счет: … (руб.)».');
+    return [...currencies][0];
+  }
   function parsePages(pages){
     if(!Array.isArray(pages)||!pages.length||!pages.some(p=>p.items?.some(i=>clean(i.str))))throw new Error('В PDF нет текста. Сканированные документы пока не поддерживаются.');
     if(pages.length>MAX_PAGES)throw new Error('Слишком много страниц PDF (не более 200).');
     const bank=detect(pages);
+    const accountCurrency=bank==='otp'?otpAccountCurrency(pages):null;
     const layout=layouts[bank],warnings=[],blocks=[];
     let previous=null,totalItems=0;
     for(let p=0;p<pages.length;p++){
@@ -162,9 +187,8 @@
         if(debit.minor && credit.minor){warnings.push(`Страница ${block.page}, строка ${Math.round(block.top)}: одновременно приход и расход; строка требует ручной проверки.`);continue;}
         money=debit.minor?{minor:-Math.abs(debit.minor),currency:debit.currency}:credit;
       }
-      // OTP's supplied RUB statement has bare debit/credit amounts. Other
-      // adapters require currency adjacent to the account amount.
-      const currency=money.currency||(bank==='otp'?'RUB':null);
+      if(bank==='otp'&&money.currency&&money.currency!==accountCurrency)throw new Error('Валюта суммы ОТП противоречит валюте счёта. Проверьте выписку.');
+      const currency=money.currency||accountCurrency;
       let operation=layout.operation?moneyCell(amountAt(layout.operation)):null;
       if(bank==='alfa'){
         const match=desc.match(/на сумму:?\s+([+−-]?[\d\s]+[.,]\d{2})\s+([A-Z]{3}|₽|€)/i);

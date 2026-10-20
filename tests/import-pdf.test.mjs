@@ -9,6 +9,7 @@ function page(pageNumber,cells,width=595,{bank,headers=true}={}) {
   bank ||= Object.entries({tbank:'Т-Банк',alfa:'АЛЬФА-БАНК',vtb:'ВТБ',otp:'ОТП Банк'}).find(([,name])=>cells.some(c=>c[0]===name&&c[1]<100))?.[0];
   if(!bank&&cells.some(c=>c[0]==='Счет-выписка'))bank='otp';
   const firstDate=Math.min(...cells.filter(c=>/^\d{2}\.\d{2}\.\d{4}$/.test(c[0])).map(c=>c[2]));
+  if(bank==='otp'&&!cells.some(c=>/^(?:Валюта|Счет:)/.test(c[0])))cells=[['Валюта счета: RUB',57,10],...cells];
   if(bank&&headers&&Number.isFinite(firstDate)){
     const existingLabels=/^(?:Дата и время|Сумма операции|Дата проводки|Дата операции|Назначение платежа|Расход|Приход|Описание(?: операции)?)$/;
     cells=cells.filter(c=>!(c[2]<firstDate&&existingLabels.test(c[0])));
@@ -24,6 +25,13 @@ const fullHeaders={
   vtb:[['Дата и время операции',25,0],['Дата обработки банком',86,0],['Сумма операции в валюте операции',155,0],['Сумма операции в валюте счета/карты',237,0],['Приход',280,20],['Расход',361,20],['Описание операции',408,10],['Наименование получателя/Отправителя',509,0]],
   otp:[['Номер',68,0],['Дата операции',116,0],['Операция',203,0],['Расход',368,0],['Приход',490,0],['Назначение платежа',625,0]]
 };
+test('OTP requires unambiguous account currency metadata for bare amounts',()=>{
+  const cells=[['ОТП Банк',57,60],['02.01.2026',116,310],['Покупка',203,310],['10.05',368,310],['TEST',625,310]];
+  const parse=metadata=>{const p=page(1,[...metadata,...cells],842);if(!metadata.length)p.items=p.items.filter(i=>i.str!=='Валюта счета: RUB');return pdf.parsePages([p]);};
+  assert.equal(parse([['Валюта счета: USD',57,160]]).rows[0].currency,'USD');
+  assert.throws(()=>parse([]),/валют/i);
+  assert.throws(()=>parse([['Валюта счета: USD',57,160],['Счет: (руб.)',57,190]]),/валют/i);
+});
 test('transaction descriptions naming other banks never override the T-Bank issuer/table', () => {
   for(const desc of ['Перевод ВТБ','Оплата АЛЬФА-БАНК','Перевод ОТП Банк']){
     const result=pdf.parsePages([page(1,[['Т-Банк',30,40],...fullHeaders.tbank.map(([s,x,y])=>[s,x,y+60]),['02.01.2026',56,100],['03.01.2026',126,100],['-2 USD',199,100],['-180.50 RUB',294,100],[desc,389,100]],595,{headers:false})]);

@@ -140,6 +140,10 @@
     const rows=[],warnings=[];
     for(let i=headerIndex+1;i<table.length;i++){
       const c=table[i],status=canonical(c[statusIndex]);
+      if(bank==='tbank'&&statusIndex>=0&&!/^(?:ok|выполнен|выполнена|выполнено)$/.test(status)){
+        warnings.push(`Строка ${i+1}: операция исключена — статус не подтверждает выполнение (${compact(c[statusIndex])||'не указан'}).`);
+        continue;
+      }
       if(/отмен|отклон|ошиб|не выполн|failed|declined/.test(status))continue;
       const row=normalizeRow({date:c[dateIndex],postedDate:c[postIndex],signedMinor:parseMoney(c[amt]),currency:c[cur]||'RUB',desc:c[descIndex],mcc:c[mccIndex],operationAmountMinor:parseMoney(c[operationIndex]),operationCurrency:c[operationCur],sourceLocation:{line:i+1}});
       if(row)rows.push(row);else warnings.push(`Строка ${i+1}: не удалось разобрать дату, сумму или валюту.`);
