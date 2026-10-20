@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const themeSource = fs.readFileSync(new URL('../js/theme.js', import.meta.url), 'utf8');
+const planningSource = fs.readFileSync(new URL('../js/planning.js', import.meta.url), 'utf8');
 
 function runBootstrap(stored, { throws = false } = {}) {
   const match = html.match(/<script\b[^>]*\bid="theme-bootstrap"[^>]*>([\s\S]*?)<\/script>/);
@@ -78,6 +79,7 @@ test('chart rendering preserves Classic colors and switches only visible chart p
       { type: 'expense', amount: 15, date: '2026-10-03', category: 'Food' },
       { type: 'expense', amount: 10, date: '2026-10-03', category: 'Travel' }
     ];
+    budgetItems.push({type:'expense',amount:9999,currency:'USD',date:'2026-10-03',category:'Foreign'});
     renderCharts(budgetItems);
   `);
   assert.equal(app.run('chartDonut.data.datasets[0].data.join()'), '40,10');
@@ -131,17 +133,21 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   const databaseRequests = [];
   let activeDatabaseUser = null;
   function queryTable(table) {
-    let pending;
+    let pending, operation = 'select', row, filters = {};
     const start = () => {
       if (!pending) {
-        pending = new Promise(resolve => databaseRequests.push({ userId: activeDatabaseUser, table, resolve }));
+        pending = new Promise(resolve => databaseRequests.push({ userId: activeDatabaseUser, table, operation, row, filters, resolve }));
       }
       return pending;
     };
     const builder = {
       select() { return builder; },
+      eq(key, value) { filters[key] = value; return builder; },
+      upsert(value) { operation = 'upsert'; row = value; return builder; },
+      delete() { operation = 'delete'; return builder; },
       order() { return builder; },
       single() { return start(); },
+      maybeSingle() { return start(); },
       then(resolve, reject) { return start().then(resolve, reject); }
     };
     return builder;
@@ -168,7 +174,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     : null;
   if (authControl) nodes.set(authControl.id, authControl);
   const navThemeLabelMatch = html.match(
-    /<span\b(?=[^>]*\bdata-theme-toggle-label="short")(?=[^>]*\bclass="[^"]*\btheme-toggle-label\b[^"]*")[^>]*>([^<]*)<\/span>/s
+    /<span\b(?=[^>]*\bdata-theme-toggle-label="short")[^>]*>([^<]*)<\/span>/s
   );
   const navThemeLabel = navThemeLabelMatch ? element('navigation-theme-toggle-label') : null;
   if (navThemeLabel) {
@@ -208,6 +214,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   };
   const auth = {
     onAuthStateChange(callback) { callbacks.push(callback); },
+    async getUser() { return { data: { user: activeDatabaseUser ? { id: activeDatabaseUser } : null } }; },
     async updateUser(payload) {
       writes.push(JSON.parse(JSON.stringify(payload)));
       if (updateRemoteImpl) return updateRemoteImpl(payload);
@@ -224,6 +231,7 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     setTimeout(callback, delay) { timers.push({ callback, delay }); return timers.length; }, clearTimeout() {}
   };
   const context = vm.createContext(sandbox);
+  vm.runInContext(planningSource, context);
   if (!missingThemeAsset) vm.runInContext(themeSource, context);
   const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   vm.runInContext(scripts.at(-1)[1], context, { filename: 'index.html#application' });
@@ -736,8 +744,8 @@ test('stale account load cannot commit data or UI after a newer account starts l
   const pendingB = app.authEvent('SIGNED_IN', { user: { id: 'user-B', user_metadata: { theme: 'pixel-retro' } } });
   await Promise.resolve();
   await Promise.resolve();
-  assert.equal(app.databaseRequests.filter(request => request.userId === 'user-A').length, 5);
-  assert.equal(app.databaseRequests.filter(request => request.userId === 'user-B').length, 5);
+  assert.equal(app.databaseRequests.filter(request => request.userId === 'user-A').length, 6);
+  assert.equal(app.databaseRequests.filter(request => request.userId === 'user-B').length, 6);
   const generationB = app.run('themeAuthGeneration');
   assert.equal(app.nodes.get('nav').style.display, 'none');
   assert.equal(app.nodes.get('loading-screen').classList.contains('hidden'), false);
@@ -745,10 +753,12 @@ test('stale account load cannot commit data or UI after a newer account starts l
   assert.equal(app.resolveDatabase('user-A', {
     wallets: [{ id: 'wallet-A', name: 'A secret', balance: 10 }],
     receivables: [], debts: [], budget_items: [],
+    irregular_payments: [{id:'A',name:'A private',amount:12000,months:12,currency:'RUB',start_month:'2026-10'}],
     categories: { id: 'categories-A', data: { expense: [], income: [] }, tags: [] }
-  }), 5);
+  }), 6);
   await pendingA;
   assert.equal(JSON.stringify(app.run('wallets.map(wallet => wallet.name)')), '[]');
+  assert.equal(app.run('irregularPayments.length'), 0);
   assert.equal(app.nodes.get('nav').style.display, 'none');
   assert.equal(app.nodes.get('loading-screen').classList.contains('hidden'), false);
   assert.deepEqual(app.showCalls, []);
@@ -757,10 +767,13 @@ test('stale account load cannot commit data or UI after a newer account starts l
   assert.equal(app.resolveDatabase('user-B', {
     wallets: [{ id: 'wallet-B', name: 'B wallet', balance: 20 }],
     receivables: [], debts: [], budget_items: [],
+    irregular_payments: [{id:'B',name:'B school',amount:60000,months:6,currency:'RUB',start_month:'2026-10'}],
     categories: { id: 'categories-B', data: { expense: [], income: [] }, tags: [] }
-  }), 5);
+  }), 6);
   await pendingB;
   assert.equal(JSON.stringify(app.run('wallets.map(wallet => wallet.name)')), '["B wallet"]');
+  assert.equal(app.run('irregularPayments[0].name'), 'B school');
+  assert.equal(app.run("reserveRows('2026-10')[0].amount"), 10000);
   assert.equal(app.nodes.get('nav').style.display, '');
   assert.equal(app.nodes.get('loading-screen').classList.contains('hidden'), true);
   assert.deepEqual(app.showCalls, ['home']);
@@ -775,4 +788,104 @@ test('sign-out invalidates scheduled reconciliation even if the next login repea
   await app.authEvent('SIGNED_IN', session);
   await app.flushAuthTasks();
   assert.deepEqual(app.writes, [{ data: { theme: 'classic' } }]);
+});
+
+test('daily dates restore per account and saving never writes other profile fields', async () => {
+  const app = appHarness();
+  const session = { user: { id: 'A', user_metadata: { theme: 'classic', finora_daily_days: [{ day: 5, moveWeekend: true }] } } };
+  await app.authEvent('SIGNED_IN', session);
+  assert.equal(app.run('accountDays[0].day'), 5);
+  await app.run("savePlanningProfile('finora_daily_days', [{day:20,moveWeekend:false}])");
+  assert.deepEqual(app.writes, [{ data: { finora_daily_days: [{ day: 20, moveWeekend: false }] } }]);
+  assert.equal(app.run('accountDays[0].day'), 20);
+  await app.authEvent('SIGNED_OUT', null);
+  await app.authEvent('SIGNED_IN', { user: { id: 'B', user_metadata: { theme: 'classic' } } });
+  assert.equal(app.run('accountDays.map(d=>d.day).join()'), '10,25');
+  await app.authEvent('SIGNED_IN', session);
+  assert.equal(app.run('accountDays[0].day'), 5);
+});
+test('an account without a saved theme never inherits another account theme', async () => {
+  const app = appHarness();
+  await app.authEvent('SIGNED_IN', { user: { id: 'A', user_metadata: { theme: 'pixel-retro' } } });
+  await app.flushAuthTasks();
+  await app.authEvent('SIGNED_OUT', null);
+  await app.authEvent('SIGNED_IN', { user: { id: 'B', user_metadata: {} } });
+  await app.flushAuthTasks();
+  assert.equal(app.root.dataset.theme, 'classic');
+  assert.deepEqual(app.writes.at(-1), { data: { theme: 'classic' } });
+});
+
+test('failed or stale date saves do not replace another account schedule', async () => {
+  let resolveSave;
+  const app = appHarness({ updateRemoteImpl: () => new Promise(resolve => { resolveSave = resolve; }) });
+  await app.authEvent('SIGNED_IN', { user: { id: 'A', user_metadata: { theme: 'classic' } } });
+  const pending = app.run("savePlanningProfile('finora_daily_days', [{day:5,moveWeekend:true}])");
+  await new Promise(setImmediate);
+  await app.authEvent('SIGNED_IN', { user: { id: 'B', user_metadata: { theme: 'classic', finora_daily_days: [20] } } });
+  resolveSave({ error: null });
+  assert.equal(await pending, false);
+  assert.equal(app.run('accountDays[0].day'), 20);
+  const failing = appHarness({ updateError: new Error('Offline') });
+  await failing.authEvent('SIGNED_IN', { user: { id: 'A', user_metadata: { theme: 'classic' } } });
+  await assert.rejects(failing.run("savePlanningProfile('finora_daily_days', [{day:5,moveWeekend:true}])"), /Offline/);
+  assert.equal(failing.run('accountDays.map(d=>d.day).join()'), '10,25');
+});
+
+test('saving a new irregular payment writes only its row, never another device list or categories', async () => {
+  const app = appHarness();
+  await app.authEvent('SIGNED_IN', { user: { id: 'A', user_metadata: { theme: 'classic' } } });
+  app.run('irregularReady = true');
+  const pending = app.run("savePlanningProfile('finora_irregular_payments', [{id:'insurance',name:'Страховка',amount:12000,months:12,currency:'RUB',startMonth:'2026-10'}])");
+  await new Promise(setImmediate);
+  assert.equal(app.databaseRequests.length, 1);
+  const write = app.databaseRequests.find(r => r.operation === 'upsert');
+  assert.equal(write.table, 'irregular_payments');
+  assert.equal(write.row.user_id, 'A');
+  assert.equal(write.row.id, 'insurance');
+  assert.equal(write.row.start_month, '2026-10');
+  app.resolveDatabase('A', { irregular_payments: write.row });
+  assert.equal(await pending, true);
+  assert.equal(app.writes.length, 0);
+  assert.equal(app.run("reserveRows('2026-10')[0].amount"), 1000);
+  assert.equal(app.run('budgetItems.length'), 0);
+});
+
+test('theme retry shares the controller queue with newer toggle intent', async () => {
+  let finish;
+  let first = true;
+  const app = appHarness({updateRemoteImpl: () => first ? (first = false, new Promise(resolve => { finish=resolve; })) : {error:null}});
+  await app.authEvent('SIGNED_IN', {user:{id:'A',user_metadata:{theme:'pixel-retro'}}});
+  app.run("themeController.apply('pixel-retro')");
+  const retry = app.run('retrySettingsTheme()');
+  await new Promise(setImmediate);
+  const toggle = app.run('changeSettingsTheme()');
+  await new Promise(setImmediate);
+  assert.equal(app.writes.length,1,'Retry and toggle must serialize remote writes');
+  finish({error:null});
+  await Promise.all([retry,toggle]);
+  assert.equal(app.root.dataset.theme,'classic');
+  assert.deepEqual(app.writes.at(-1),{data:{theme:'classic'}});
+});
+
+test('failed irregular deletion keeps the plan and targets only the current account row', async () => {
+  const app=appHarness();
+  await app.authEvent('SIGNED_IN',{user:{id:'A',user_metadata:{theme:'classic'}}});
+  app.run("irregularReady=true; irregularPayments=[{id:'insurance',name:'Insurance',amount:12000,months:12,currency:'RUB',startMonth:'2026-10'}]");
+  const pending=app.run("savePlanningProfile('finora_irregular_payments',[])");
+  const rejected=assert.rejects(pending,/Offline/);
+  await new Promise(setImmediate);
+  const request=app.databaseRequests[0];
+  assert.equal(request.operation,'delete');
+  assert.deepEqual(request.filters,{user_id:'A',id:'insurance'});
+  request.resolve({error:new Error('Offline')});
+  await rejected;
+  assert.equal(app.run('irregularPayments.length'),1);
+  assert.equal(app.run('planningBusy'),false);
+});
+test('unavailable irregular data never displays zero reserve or a complete expense total', () => {
+  const app=appHarness();
+  app.run('renderCharts=()=>{}; irregularReady=false; renderBudget()');
+  assert.equal(app.nodes.get('budget-expense-total').textContent,'—');
+  assert.equal(app.nodes.get('budget-balance').textContent,'—');
+  assert.match(app.nodes.get('irregular-summary').textContent,/недоступен/);
 });

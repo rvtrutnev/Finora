@@ -284,6 +284,13 @@
 [data-theme="pixel-retro"] .text-dark-600 { color: var(--color-text-muted); }
 
 @media (max-width: 767px) {
+  nav > div { flex-wrap: wrap; }
+  nav [id^="nav-"] { min-width: 4.5rem; }
+  #settings-days { gap: 4px; }
+  #settings-days label { flex-wrap: nowrap !important; gap: 2px; font-size: 12px; min-height: 40px; }
+  #settings-days input { width: 12px; height: 12px; flex: 0 0 12px; }
+  #settings-weekends label { flex-wrap: nowrap !important; }
+  #settings-weekends input { flex: 0 0 13px; }
   [data-theme="pixel-retro"] nav > div { flex-wrap: wrap; }
   [data-theme="pixel-retro"] nav [id^="nav-"] { min-width: 5.5rem; }
   [data-theme="pixel-retro"] .page :is(h1, h2) { font-size: 0.75rem; }
