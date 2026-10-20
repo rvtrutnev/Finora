@@ -19,6 +19,7 @@ function createHarness({ storedTheme, pendingTheme, updateRemoteImpl, getRemoteC
     removeItem(key) { values.delete(key); }
   };
   const root = { dataset: {} };
+  const logos = [0, 1].map(() => ({ src: 'logo.png', dataset: { classicSrc: 'logo.png', pixelSrc: 'logo-pixel.svg' } }));
   const themeColor = { content: '' };
   const controls = [
     createControl(),
@@ -30,6 +31,7 @@ function createHarness({ storedTheme, pendingTheme, updateRemoteImpl, getRemoteC
       return selector === 'meta[name="theme-color"]' ? themeColor : null;
     },
     querySelectorAll(selector) {
+      if (selector === '[data-brand-logo]') return logos;
       return selector === '[data-theme-toggle]' ? controls : [];
     }
   };
@@ -54,6 +56,7 @@ function createHarness({ storedTheme, pendingTheme, updateRemoteImpl, getRemoteC
   return {
     api: window.FinoraTheme,
     controller,
+    logos,
     controls,
     document,
     notifications,
@@ -65,6 +68,15 @@ function createHarness({ storedTheme, pendingTheme, updateRemoteImpl, getRemoteC
     values
   };
 }
+
+test('brand logos follow initial account theme and switch back without changing Classic asset', async () => {
+  const h = createHarness({ storedTheme: 'pixel-retro' });
+  assert.deepEqual(h.logos.map(l => l.src), ['logo-pixel.svg', 'logo-pixel.svg']);
+  await h.controller.toggle();
+  assert.deepEqual(h.logos.map(l => l.src), ['logo.png', 'logo.png']);
+  await h.controller.reconcile({ id: 'A', user_metadata: { theme: 'pixel-retro' } });
+  assert.deepEqual(h.logos.map(l => l.src), ['logo-pixel.svg', 'logo-pixel.svg']);
+});
 
 function createControl() {
   const attributes = { 'data-theme-toggle': '' };

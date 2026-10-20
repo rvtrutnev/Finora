@@ -90,6 +90,11 @@
         if (meta) meta.content = THEME_COLORS[currentTheme];
       }
       if (persist) write(STORAGE_KEY, currentTheme);
+      if (document && typeof document.querySelectorAll === 'function') {
+        for (const logo of document.querySelectorAll('[data-brand-logo]')) {
+          logo.src = currentTheme === 'pixel-retro' ? logo.dataset.pixelSrc : logo.dataset.classicSrc;
+        }
+      }
       refreshControls();
       if (shouldNotify) {
         const messageKey = currentTheme === 'pixel-retro'

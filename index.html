@@ -148,7 +148,8 @@ tailwind.config = {
 <div id="auth-screen" class="hidden fixed inset-0 z-50 bg-dark-300 flex items-center justify-center p-4">
   <div class="card-elevated rounded-xl shadow-2xl p-8 w-full max-w-sm">
     <div class="text-center mb-6">
-      <img src="logo.png" alt="Finora" class="w-28 h-28 mx-auto mb-2 rounded-2xl">
+      <img src="logo.png" data-brand-logo data-classic-src="logo.png" data-pixel-src="logo-pixel.svg" alt="Finora" width="112" height="112" class="w-28 h-28 mx-auto mb-2 rounded-2xl">
+      <span class="pixel-brand-wordmark" aria-hidden="true">FINORA</span>
       <p class="text-dark-900 text-sm font-medium tracking-wide">Finance Organizer &amp; Analytics</p>
       <p class="text-dark-700 text-xs mt-1">Организация и аналитика ваших финансов</p>
     </div>
@@ -216,7 +217,7 @@ tailwind.config = {
 
 <nav class="bg-dark-200 border-b border-dark-400 sticky top-0 z-40">
   <div class="max-w-4xl mx-auto flex items-center">
-    <img src="logo.png" alt="Finora" class="h-7 w-7 ml-3 rounded-lg flex-shrink-0">
+    <img src="logo.png" data-brand-logo data-classic-src="logo.png" data-pixel-src="logo-pixel.svg" alt="Finora" width="28" height="28" class="h-7 w-7 ml-3 rounded-lg flex-shrink-0">
     <button onclick="showPage('home')" id="nav-home" class="flex-1 py-2.5 px-3 text-center text-dark-800 hover:text-gold-600 transition-all duration-200 tab-active">
       <div class="nav-tab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="text-xs font-medium" data-i18n="nav_home">Главная</span></div>
     </button>
