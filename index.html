@@ -25,6 +25,8 @@ try {
 <script src="./js/import-core.js"></script>
 <script src="./js/import-pdf.js"></script>
 <script src="./js/import-ui.js"></script>
+<script src="./js/faq-content.js"></script>
+<script src="./js/faq-ui.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
@@ -253,6 +255,7 @@ tailwind.config = {
     <button id="nav-settings" type="button" onclick="showPage('settings')" aria-label="Настройки" title="Настройки" class="px-3 py-3 text-dark-700 hover:text-gold-600 transition">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--color-surface-sunken,#16161b)"/><circle cx="15" cy="17" r="3" fill="var(--color-surface-sunken,#16161b)"/></svg>
     </button>
+    <button id="nav-faq" type="button" onclick="openFAQ()" aria-haspopup="dialog" aria-controls="faq-dialog" aria-label="FAQ — инструкции по разделам" class="faq-trigger">? FAQ</button>
     <button onclick="signOut()" title="Sign out" class="px-3 py-3.5 text-dark-700 hover:text-danger-600 transition text-lg">⏻</button>
   </div>
 </nav>
@@ -1656,6 +1659,7 @@ function toggleTheme() { return themeController?.toggle(); }
 function reconcileTheme(user) { return themeController?.reconcile(user); }
 
 function resetAccountData() {
+  faq?.close();
   bankImport.reset();
   wallets = []; receivables = []; debts = []; budgetItems = [];
   categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
@@ -1740,6 +1744,11 @@ function fmt(amount, currency) {
 }
 
 // ==================== NAVIGATION ====================
+let faq = null;
+function openFAQ() {
+  faq ||= window.FinoraFAQ.create({document, content: window.FinoraFAQContent});
+  faq.open(document.querySelector('.page.active')?.id.replace('page-', '') || 'general');
+}
 function clearCardAnimation(card) {
   card.classList.remove('card-animate');
   card.style.animationDelay = '';
@@ -2685,6 +2694,7 @@ function closeModal(name) { document.getElementById('modal-' + name).classList.a
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  if (document.getElementById('faq-dialog')?.open) return;
   ['wallet','receivable','debt','payoff','budget','category'].forEach(name => {
     document.getElementById('modal-' + name)?.classList.add('hidden');
   });

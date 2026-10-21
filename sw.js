@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'finora-';
-const CACHE = `${CACHE_PREFIX}v6`;
+const CACHE = `${CACHE_PREFIX}v7`;
 const ASSETS = [
   './index.html',
   './styles/themes.css',
@@ -8,6 +8,8 @@ const ASSETS = [
   './js/import-core.js',
   './js/import-pdf.js',
   './js/import-ui.js',
+  './js/faq-content.js',
+  './js/faq-ui.js',
   './vendor/pdfjs/pdf.mjs',
   './vendor/pdfjs/pdf.worker.mjs',
   './logo.png',
