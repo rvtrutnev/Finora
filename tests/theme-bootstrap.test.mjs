@@ -9,6 +9,8 @@ const themeSource = fs.readFileSync(new URL('../js/theme.js', import.meta.url), 
 const planningSource = fs.readFileSync(new URL('../js/planning.js', import.meta.url), 'utf8');
 const importCoreSource = fs.readFileSync(new URL('../js/import-core.js', import.meta.url), 'utf8');
 const importUISource = fs.readFileSync(new URL('../js/import-ui.js', import.meta.url), 'utf8');
+const capitalCoreSource = fs.readFileSync(new URL('../js/capital-core.js', import.meta.url), 'utf8');
+const capitalUISource = fs.readFileSync(new URL('../js/capital-ui.js', import.meta.url), 'utf8');
 
 function runBootstrap(stored, { throws = false } = {}) {
   const match = html.match(/<script\b[^>]*\bid="theme-bootstrap"[^>]*>([\s\S]*?)<\/script>/);
@@ -32,6 +34,24 @@ function runBootstrap(stored, { throws = false } = {}) {
   vm.runInNewContext(match[1], sandbox, { filename: 'index.html#theme-bootstrap' });
   return { theme: root.dataset.theme, reads, networkCalls };
 }
+
+test('capital scenario loads per owner, saves only its metadata key and preserves drafts on echoes', async () => {
+  const app=appHarness();
+  const plan={version:1,mode:'goal',monthlyIncome:100000,payoutCapital:'',initialCapital:0,years:10,months:0,inflationPercent:5,accumulationPercent:8,payoutPercent:10,preservePurchasingPower:true};
+  const session={user:{id:'user-A',user_metadata:{theme:'classic',finora_capital_plan:plan}}};
+  await app.authEvent('INITIAL_SESSION',session);
+  assert.equal(app.run('capitalController.state.values.monthlyIncome'),100000);
+  app.run("capitalController.edit('monthlyIncome','120000')");
+  await app.run('capitalController.save()');
+  const saved=app.writes.find(p=>p.data.finora_capital_plan);
+  assert.deepEqual(Object.keys(saved.data),['finora_capital_plan']);
+  assert.equal(saved.data.finora_capital_plan.monthlyIncome,120000);
+  app.run("capitalController.edit('monthlyIncome','130000')");
+  await app.authEvent('USER_UPDATED',session);
+  assert.equal(app.run('capitalController.state.values.monthlyIncome'),'130000');
+  await app.authEvent('SIGNED_IN',{user:{id:'user-B',user_metadata:{theme:'classic'}}});
+  assert.equal(app.run('capitalController.state.values.monthlyIncome'),'');
+});
 
 test('empty storage leaves Classic before body initialization', () => {
   assert.equal(runBootstrap(null).theme, 'classic');
@@ -237,6 +257,8 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
   vm.runInContext(planningSource, context);
   vm.runInContext(importCoreSource, context);
   vm.runInContext(importUISource, context);
+  vm.runInContext(capitalCoreSource, context);
+  vm.runInContext(capitalUISource, context);
   if (!missingThemeAsset) vm.runInContext(themeSource, context);
   const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   vm.runInContext(scripts.at(-1)[1], context, { filename: 'index.html#application' });

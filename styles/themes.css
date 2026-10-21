@@ -1,3 +1,46 @@
+/* Capital planner extends the current calculator: inputs beside a dated financial scenario.
+   Classic/Pixel tokens remain authoritative; formulas and assumptions stay visible. */
+.capital-planner { margin-top: 32px; padding: 24px; color: var(--color-text-control); }
+.capital-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 24px; }
+.capital-heading h2 { font: 600 24px/1.5 var(--font-display); color: var(--color-action-highlight); }
+.capital-heading p, .capital-hint, .capital-assumptions { color: var(--color-text); font-size: 14px; line-height: 1.6; }
+.capital-help { min-height: 44px; padding: 8px 0 8px 12px; text-decoration: underline; text-underline-offset: 4px; flex-shrink: 0; }
+.capital-columns { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 32px; margin-top: 24px; }
+.capital-planner h3 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+.capital-mode { max-width: 440px; }
+.capital-mode label, .capital-field label { display: block; font-size: 14px; line-height: 1.5; margin-bottom: 8px; }
+.capital-planner input:not([type="checkbox"]), .capital-planner select { width: 100%; min-height: 44px; padding: 10px 12px; background: var(--color-surface-sunken); color: var(--color-text-control); border: 1px solid var(--color-border-strong); border-radius: var(--radius-control); font: 400 16px/1.5 var(--font-body); }
+.capital-field { margin-bottom: 14px; min-width: 0; }
+.capital-duration { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.capital-error { color: var(--color-negative-bright); font-size: 13px; line-height: 1.5; margin-top: 4px; }
+.capital-planner [aria-invalid="true"] { border-color: var(--color-negative-bright); }
+#capital-accumulation { margin-top: 28px; }
+.capital-options { border-top: 1px solid var(--color-border); margin-top: 24px; padding-top: 12px; }
+.capital-options summary { cursor: pointer; padding: 10px 0; min-height: 44px; }
+.capital-check { display: flex; align-items: start; gap: 10px; padding: 8px 0; line-height: 1.5; }
+.capital-check input { margin-top: 5px; accent-color: var(--color-action); width: 18px; height: 18px; flex-shrink: 0; }
+.capital-output { border-top: 2px solid var(--color-action); padding-top: 16px; min-width: 0; }
+.capital-output dl > div { padding: 16px 0; border-bottom: 1px solid var(--color-border); }
+.capital-output dt { font-size: 14px; line-height: 1.5; color: var(--color-text); }
+.capital-output dd { font-size: 22px; font-weight: 600; line-height: 1.5; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.capital-output .capital-primary dd { color: var(--color-action-highlight); font-size: 28px; }
+#capital-progress { margin-top: 24px; font-size: 14px; line-height: 1.6; }
+.capital-assumptions { margin-top: 24px; }
+.capital-save { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--color-border); margin-top: 24px; padding-top: 20px; }
+.capital-save button { min-height: 44px; padding: 10px 16px; }
+.capital-save button:disabled { opacity: 0.6; cursor: wait; }
+#capital-status { font-size: 14px; line-height: 1.5; flex: 1 1 200px; }
+.capital-planner :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+.capital-planner [hidden] { display: none !important; }
+[data-theme="pixel-retro"] .capital-heading h2 { font-size: 18px; line-height: 1.8; }
+@media (max-width: 640px) {
+  .capital-planner { padding: 16px; }
+  .capital-heading { flex-direction: column; gap: 4px; }
+  .capital-help { padding-left: 0; }
+  .capital-columns { grid-template-columns: minmax(0,1fr); gap: 24px; }
+  .capital-output .capital-primary dd { font-size: 24px; }
+}
+
 /* FAQ extends the incumbent Classic/Pixel world: contextual reading without navigation.
    Desktop: right-hand reading panel; mobile: full-screen. No new visual identity. */
 .faq-trigger { min-height: 44px; padding: 10px 14px; white-space: nowrap; color: var(--color-text-control); }
