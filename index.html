@@ -27,6 +27,8 @@ try {
 <script src="./js/import-ui.js"></script>
 <script src="./js/faq-content.js"></script>
 <script src="./js/faq-ui.js"></script>
+<script src="./js/capital-core.js"></script>
+<script src="./js/capital-ui.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
@@ -660,6 +662,39 @@ tailwind.config = {
     </div>
 
   </div>
+  <section id="capital-planner" class="capital-planner card rounded-xl" aria-labelledby="capital-title">
+    <div class="capital-heading"><div><h2 id="capital-title">Моя цифра</h2><p>Капитал, пассивный доход и путь к цели</p></div><button type="button" class="capital-help" onclick="openCapitalFAQ()">Как считается</button></div>
+    <div class="capital-mode"><label for="capital-mode">Что рассчитать</label><select id="capital-mode" onchange="capitalController.edit('mode',this.value)"><option value="goal">Какой капитал нужен</option><option value="income">Какой доход даст капитал</option></select></div>
+    <div class="capital-columns">
+      <div class="capital-inputs">
+        <h3>Цель</h3>
+        <div id="capital-wrap-monthlyIncome" class="capital-field"><label for="capital-monthlyIncome">Желаемый доход в месяц, ₽ сегодня</label><input id="capital-monthlyIncome" type="number" min="0.01" max="1000000000000" step="0.01" inputmode="decimal" aria-describedby="capital-error-monthlyIncome" oninput="capitalController.edit('monthlyIncome', this.value)"><p id="capital-error-monthlyIncome" class="capital-error"></p></div>
+        <div id="capital-wrap-payoutCapital" class="capital-field"><label for="capital-payoutCapital">Капитал к сроку цели, ₽</label><input id="capital-payoutCapital" type="number" min="0" max="1000000000000" step="0.01" inputmode="decimal" aria-describedby="capital-error-payoutCapital" oninput="capitalController.edit('payoutCapital', this.value)"><p id="capital-error-payoutCapital" class="capital-error"></p></div>
+        <div class="capital-duration"><div id="capital-wrap-years" class="capital-field"><label for="capital-years">Лет до цели</label><input id="capital-years" type="number" min="0" max="60" step="1" inputmode="decimal" aria-describedby="capital-error-years" oninput="capitalController.edit('years', this.value)"><p id="capital-error-years" class="capital-error"></p></div><div id="capital-wrap-months" class="capital-field"><label for="capital-months">Дополнительно месяцев</label><input id="capital-months" type="number" min="0" max="11" step="1" inputmode="decimal" aria-describedby="capital-error-months" oninput="capitalController.edit('months', this.value)"><p id="capital-error-months" class="capital-error"></p></div></div>
+        <div id="capital-wrap-inflationPercent" class="capital-field"><label for="capital-inflationPercent">Инфляция, % в год</label><input id="capital-inflationPercent" type="number" min="0" max="100" step="any" inputmode="decimal" aria-describedby="capital-error-inflationPercent" oninput="capitalController.edit('inflationPercent', this.value)"><p id="capital-error-inflationPercent" class="capital-error"></p></div>
+        <div id="capital-wrap-payoutPercent" class="capital-field"><label for="capital-payoutPercent">Доходность при выплатах, % в год</label><input id="capital-payoutPercent" type="number" min="-99" max="100" step="any" inputmode="decimal" aria-describedby="capital-error-payoutPercent" oninput="capitalController.edit('payoutPercent', this.value)"><p id="capital-error-payoutPercent" class="capital-error"></p></div>
+        <p class="capital-hint">Доходность после налогов и комиссий. Ставки задаёте вы — это не рыночный прогноз.</p>
+        <div id="capital-accumulation"><h3>Как накопить</h3><div id="capital-wrap-initialCapital" class="capital-field"><label for="capital-initialCapital">Уже накоплено сегодня, ₽</label><input id="capital-initialCapital" type="number" min="0" max="1000000000000" step="0.01" inputmode="decimal" aria-describedby="capital-error-initialCapital" oninput="capitalController.edit('initialCapital', this.value)"><p id="capital-error-initialCapital" class="capital-error"></p></div><div id="capital-wrap-accumulationPercent" class="capital-field"><label for="capital-accumulationPercent">Доходность накопления, % в год</label><input id="capital-accumulationPercent" type="number" min="-99" max="100" step="any" inputmode="decimal" aria-describedby="capital-error-accumulationPercent" oninput="capitalController.edit('accumulationPercent', this.value)"><p id="capital-error-accumulationPercent" class="capital-error"></p></div></div>
+        <details class="capital-options"><summary>Условия расчёта</summary><label class="capital-check"><input id="capital-preservePurchasingPower" type="checkbox" checked onchange="capitalController.edit('preservePurchasingPower',this.checked)"><span>Сохранять покупательную способность капитала</span></label><p class="capital-hint">Часть доходности остаётся в капитале для компенсации инфляции. Без этого номинальный капитал сохраняется, но обесценивается.</p></details>
+      </div>
+      <div class="capital-output">
+        <h3>Ваш ориентир</h3>
+        <p id="capital-empty">Заполните цель, срок и ставки — здесь появится расчёт.</p>
+        <p id="capital-problem" class="capital-error" role="status"></p>
+        <div id="capital-results" hidden>
+          <dl>
+            <div><dt id="capital-income-label">Доход в месяц к сроку цели</dt><dd id="capital-income-result"></dd></div>
+            <div><dt>Этот доход в сегодняшних деньгах</dt><dd id="capital-today-result"></dd></div>
+            <div class="capital-primary"><dt id="capital-target-label">Необходимый капитал к сроку цели</dt><dd id="capital-target-result"></dd></div>
+            <div><dt>Капитал в сегодняшних деньгах</dt><dd id="capital-capital-today-result"></dd></div>
+          </dl>
+          <div id="capital-contribution-wrap"><p id="capital-progress"></p><dl><div class="capital-primary"><dt id="capital-contribution-label">Откладывать каждый месяц</dt><dd id="capital-contribution-result"></dd></div></dl></div>
+        </div>
+        <p class="capital-assumptions">Расчётный сценарий, не гарантия дохода. Выплаты — средняя сумма из годового бюджета. Доходность и инфляция постоянны. При накоплении доход реинвестируется, фиксированный взнос поступает в конце месяца.</p>
+      </div>
+    </div>
+    <div class="capital-save"><button id="capital-save" type="button" class="btn-gold rounded-lg" onclick="capitalController.save()">Сохранить расчёт</button><p id="capital-status" role="status" aria-live="polite"></p></div>
+  </section>
 </div>
 
 <!-- ==================== IMPORT PAGE ==================== -->
@@ -1660,6 +1695,7 @@ function reconcileTheme(user) { return themeController?.reconcile(user); }
 
 function resetAccountData() {
   faq?.close();
+  capitalController.reset();
   bankImport.reset();
   wallets = []; receivables = []; debts = []; budgetItems = [];
   categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
@@ -1745,6 +1781,60 @@ function fmt(amount, currency) {
 
 // ==================== NAVIGATION ====================
 let faq = null;
+const capitalController = window.FinoraCapitalUI.create({
+  core: window.FinoraCapitalCore,
+  getContext: () => ({userId: themeAuthUser?.id, generation: themeAuthGeneration}),
+  savePlan: (payload, context) => {
+    if (!isCurrentAuthContext(context)) throw new Error('Учётная запись изменилась.');
+    return savePlanningProfile('finora_capital_plan', payload);
+  },
+  onChange: renderCapitalPlan
+});
+function renderCapitalPlan(state) {
+  for (const [key,value] of Object.entries(state.values)) {
+    const input = document.getElementById('capital-' + key);
+    if (!input) continue;
+    if (key === 'preservePurchasingPower') input.checked = value;
+    else if (document.activeElement !== input) input.value = value;
+    const error = state.calculation.errors[key];
+    const visible = error && (state.attempted || state.touched[key]);
+    input.setAttribute('aria-invalid', visible ? 'true' : 'false');
+    const message = document.getElementById('capital-error-' + key);
+    if (message) message.textContent = visible ? error : '';
+  }
+  const incomeMode = state.values.mode === 'income';
+  document.getElementById('capital-wrap-monthlyIncome').hidden = incomeMode;
+  document.getElementById('capital-wrap-payoutCapital').hidden = !incomeMode;
+  document.getElementById('capital-accumulation').hidden = incomeMode;
+  document.getElementById('capital-contribution-wrap').hidden = incomeMode;
+  const result = state.calculation.result;
+  const valid = result?.status === 'ok';
+  document.getElementById('capital-results').hidden = !valid;
+  document.getElementById('capital-empty').hidden = !!result || !!state.calculation.errors.result;
+  document.getElementById('capital-problem').textContent = state.calculation.errors.result || (result?.status === 'unreachable'
+    ? (state.values.preservePurchasingPower ? 'Нет доступного дохода: для положительных выплат с сохранением покупательной способности доходность должна превышать инфляцию.' : 'Нет доступного дохода: для положительных выплат доходность должна быть выше нуля.') : '');
+  if (valid) {
+    const money = (value,up=false) => new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(up ? Math.ceil(value) : value);
+    document.getElementById('capital-income-result').textContent = money(result.monthlyIncome);
+    document.getElementById('capital-today-result').textContent = money(result.incomeToday);
+    document.getElementById('capital-target-label').textContent = incomeMode ? 'Заданный капитал к сроку цели' : 'Необходимый капитал к сроку цели';
+    document.getElementById('capital-target-result').textContent = money(result.capital,!incomeMode);
+    document.getElementById('capital-capital-today-result').textContent = money(result.capitalToday);
+    if (!incomeMode) {
+      document.getElementById('capital-contribution-label').textContent = result.contribution === null ? 'Не хватает капитала сейчас' : 'Откладывать каждый месяц';
+      document.getElementById('capital-contribution-result').textContent = money(result.contribution ?? result.shortfall,true);
+      document.getElementById('capital-progress').textContent = result.contribution === null ? 'Цель на сегодня. Для расчёта взноса задайте срок больше нуля.'
+        : result.progress === 'reached' ? 'Целевой капитал уже есть. При отрицательной доходности могут потребоваться взносы для его восстановления к сроку.'
+        : result.progress === 'growth' ? 'При заданной доходности дополнительных взносов не требуется.' : 'Фиксированный взнос в конце каждого месяца.';
+    }
+  }
+  document.getElementById('capital-save').disabled = state.busy;
+  document.getElementById('capital-status').textContent = state.message;
+}
+function openCapitalFAQ() {
+  faq ||= window.FinoraFAQ.create({document, content: window.FinoraFAQContent});
+  faq.open('calc');
+}
 function openFAQ() {
   faq ||= window.FinoraFAQ.create({document, content: window.FinoraFAQContent});
   faq.open(document.querySelector('.page.active')?.id.replace('page-', '') || 'general');
@@ -3489,6 +3579,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
 
   if (session && authIdentityChanged) {
     resetAccountData();
+    capitalController.load(session.user.user_metadata?.finora_capital_plan);
     loadPlanningProfile(session.user);
     loading.classList.remove('hidden');
     nav.style.display = 'none';
