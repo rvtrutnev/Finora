@@ -1576,7 +1576,9 @@ function renderIrregularPayments() {
   if (!irregularReady) document.getElementById('irregular-status').textContent = 'Нерегулярные платежи недоступны. Проверьте соединение и наличие обновления базы данных, затем обновите страницу.';
   const totals = window.FinoraPlanning.reserves(irregularPayments, monthKey(currentMonth));
   document.getElementById('irregular-summary').textContent = 'Резерв в выбранном месяце: ' +
-    (Object.entries(totals).map(([cur, amount]) => fmt(amount, cur)).join(' + ') || fmt(0, 'RUB'));
+    (Object.entries(totals).map(([cur, amount]) => fmt(amount, cur)).join(' + ') || fmt(0, 'RUB')) +
+    ' · Всего в год: ' +
+    (Object.entries(totals).map(([cur, amount]) => fmt(amount * 12, cur)).join(' + ') || fmt(0, 'RUB'));
   if (!irregularReady) document.getElementById('irregular-summary').textContent = 'Резерв недоступен: итоги расходов и баланс временно не рассчитываются.';
   document.getElementById('irregular-list').innerHTML = irregularPayments.length ? irregularPayments.map(p => `
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dark-400 pb-3">
