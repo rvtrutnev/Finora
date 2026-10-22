@@ -908,10 +908,26 @@ test('failed irregular deletion keeps the plan and targets only the current acco
   assert.equal(app.run('irregularPayments.length'),1);
   assert.equal(app.run('planningBusy'),false);
 });
+test('irregular summary annualizes the active monthly reserve separately per currency', () => {
+  const app=appHarness();
+  app.run(`currentMonth=new Date(2026,9,1); irregularReady=true; irregularPayments=[
+    {id:'study',name:'Study',amount:60000,months:6,currency:'RUB',startMonth:'2026-01'},
+    {id:'insurance',name:'Insurance',amount:24000,months:12,currency:'RUB',startMonth:'2026-01'},
+    {id:'usd',name:'USD',amount:1200,months:12,currency:'USD',startMonth:'2026-01'},
+    {id:'future',name:'Future',amount:120000,months:12,currency:'RUB',startMonth:'2026-11'}
+  ]; renderIrregularPayments()`);
+  const summary=app.nodes.get('irregular-summary').textContent.replace(/\s/g,' ');
+  assert.match(summary,/Резерв в выбранном месяце: 12 000,00 ₽ \+ \$100,00/);
+  assert.match(summary,/Всего в год: 144 000,00 ₽ \+ \$1 200,00/);
+  app.run('irregularPayments=[]; renderIrregularPayments()');
+  assert.match(app.nodes.get('irregular-summary').textContent.replace(/\s/g,' '),/Всего в год: 0,00 ₽/);
+});
+
 test('unavailable irregular data never displays zero reserve or a complete expense total', () => {
   const app=appHarness();
   app.run('renderCharts=()=>{}; irregularReady=false; renderBudget()');
   assert.equal(app.nodes.get('budget-expense-total').textContent,'—');
   assert.equal(app.nodes.get('budget-balance').textContent,'—');
   assert.match(app.nodes.get('irregular-summary').textContent,/недоступен/);
+  assert.doesNotMatch(app.nodes.get('irregular-summary').textContent,/Всего в год|0,00/);
 });

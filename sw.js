@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'finora-';
-const CACHE = `${CACHE_PREFIX}v8`;
+const CACHE = `${CACHE_PREFIX}v9`;
 const ASSETS = [
   './index.html',
   './styles/themes.css',
