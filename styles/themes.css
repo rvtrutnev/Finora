@@ -1,3 +1,14 @@
+/* Independent budget disclosure: totals remain visible in both established themes. */
+.budget-category-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; text-align: left; cursor: pointer; }
+.budget-category-toggle:hover { filter: brightness(1.12); }
+.budget-category-toggle:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -3px; }
+.budget-category-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.budget-category-total { max-width: 55%; overflow-wrap: anywhere; text-align: right; font-variant-numeric: tabular-nums; }
+.budget-category-chevron { flex: 0 0 16px; }
+.budget-category-toggle[aria-expanded="true"] .budget-category-chevron { transform: rotate(90deg); }
+.budget-category-toggle[aria-expanded="false"] { border-bottom-width: 0; }
+.budget-category-body[hidden] { display: none; }
+
 /* Capital planner extends the current calculator: inputs beside a dated financial scenario.
    Classic/Pixel tokens remain authoritative; formulas and assumptions stay visible. */
 .capital-planner { margin-top: 32px; padding: 24px; color: var(--color-text-control); }
