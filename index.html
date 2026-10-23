@@ -1700,6 +1700,7 @@ function resetAccountData() {
   capitalController.reset();
   bankImport.reset();
   wallets = []; receivables = []; debts = []; budgetItems = [];
+  collapsedBudgetCategories.clear();
   categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
   categoriesRowId = null;
   budgetTags = ['Москва', 'Казань'];
@@ -1740,6 +1741,7 @@ async function saveCategories(authContext) {
 }
 
 let currentBudgetType = 'expense';
+const collapsedBudgetCategories = new Set();
 let currentMonth = new Date();
 currentMonth.setDate(1);
 let currentDateMode = 'exact';
@@ -2443,6 +2445,17 @@ function renderCharts(items) {
   });
 }
 
+function toggleBudgetCategory(button) {
+  const body = document.getElementById(button.getAttribute('aria-controls'));
+  if (!body) return;
+  const key = button.dataset.budgetCategory;
+  const collapse = button.getAttribute('aria-expanded') === 'true';
+  if (collapse) collapsedBudgetCategories.add(key);
+  else collapsedBudgetCategories.delete(key);
+  body.hidden = collapse;
+  button.setAttribute('aria-expanded', String(!collapse));
+}
+
 function renderBudget() {
   const mk = monthKey(currentMonth);
   renderIrregularPayments();
@@ -2500,8 +2513,8 @@ function renderBudget() {
     return da.localeCompare(db);
   });
   items.forEach(item => {
-    const key = `${item.type}:${item.category}:${item.currency || 'RUB'}`;
-    if (!grouped[key]) grouped[key] = { type: item.type, category: item.category, items: [] };
+    const key = encodeURIComponent(JSON.stringify([item.type, item.category, item.currency || 'RUB']));
+    if (!grouped[key]) grouped[key] = { key, type: item.type, category: item.category, items: [] };
     grouped[key].items.push(item);
   });
 
@@ -2510,7 +2523,9 @@ function renderBudget() {
     return a.category.localeCompare(b.category);
   });
 
-  list.innerHTML = sortedGroups.map(g => {
+  list.innerHTML = sortedGroups.map((g, index) => {
+    const expanded = !collapsedBudgetCategories.has(g.key);
+    const bodyId = `budget-category-body-${index}`;
     const total = g.items.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
     const isIncome = g.type === 'income';
     const clr = isIncome ? 'success' : 'danger';
@@ -2557,13 +2572,15 @@ function renderBudget() {
 
     return `
       <div class="card rounded-xl overflow-hidden">
-        <div class="px-4 py-2.5 flex justify-between items-center border-b border-dark-400 bg-${clr}-50">
-          <span class="text-sm font-semibold text-${clr}-600">
+        <button type="button" class="budget-category-toggle px-4 py-2.5 border-b border-dark-400 bg-${clr}-50 text-${clr}-600"
+          data-budget-category="${g.key}" aria-expanded="${expanded}" aria-controls="${bodyId}" onclick="toggleBudgetCategory(this)">
+          <svg class="budget-category-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="2"/></svg>
+          <span class="budget-category-name text-sm font-semibold">
             ${isIncome ? '↑' : '↓'} ${esc(g.category)}
           </span>
-          <span class="text-sm font-bold text-${clr}-600">${fmt(total, g.items[0]?.currency || 'RUB')}</span>
-        </div>
-        ${bodyHtml}
+          <span class="budget-category-total text-sm font-bold">${fmt(total, g.items[0]?.currency || 'RUB')}</span>
+        </button>
+        <div id="${bodyId}" class="budget-category-body"${expanded ? '' : ' hidden'}>${bodyHtml}</div>
       </div>
     `;
   }).join('');

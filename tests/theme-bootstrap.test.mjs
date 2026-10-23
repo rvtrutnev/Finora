@@ -176,10 +176,13 @@ function appHarness({ updateError = null, storageThrows = false, missingThemeAss
     return builder;
   }
   function element(id = '') {
+    let markup;
     const attributes = {};
     const classes = new Set();
     const listeners = new Map();
     return { id, dataset: {}, style: {}, textContent: '', title: '',
+      get innerHTML() { return markup ?? String(this.textContent).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); },
+      set innerHTML(value) { markup = value; },
       classList: { add(name) { classes.add(name); }, remove(name) { classes.delete(name); },
         contains(name) { return classes.has(name); }, toggle(name) { classes.has(name) ? classes.delete(name) : classes.add(name); } },
       addEventListener(name, callback) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(callback); },
@@ -930,4 +933,87 @@ test('unavailable irregular data never displays zero reserve or a complete expen
   assert.equal(app.nodes.get('budget-balance').textContent,'—');
   assert.match(app.nodes.get('irregular-summary').textContent,/недоступен/);
   assert.doesNotMatch(app.nodes.get('irregular-summary').textContent,/Всего в год|0,00/);
+});
+
+function budgetDisclosureFixture() {
+  const app = appHarness();
+  app.run(`renderCharts=()=>{}; currentMonth=new Date(2026,9,1); irregularReady=true;
+    budgetItems=[
+      {id:'food1',type:'expense',category:'Еда',subcategory:'Продукты',tag:'Дом',currency:'RUB',amount:100,recurring:true,recurDay:1},
+      {id:'food2',type:'expense',category:'Еда',subcategory:'Кафе',tag:'Работа',currency:'RUB',amount:50,recurring:true,recurDay:2},
+      {id:'usd',type:'expense',category:'Еда',currency:'USD',amount:10,recurring:true,recurDay:1},
+      {id:'income',type:'income',category:'Еда',currency:'RUB',amount:500,recurring:true,recurDay:1},
+      {id:'travel',type:'expense',category:'Транспорт',currency:'RUB',amount:20,recurring:true,recurDay:1}
+    ]; renderBudget();`);
+  const buttons = () => [...app.nodes.get('budget-list').innerHTML.matchAll(/<button\b([^>]*data-budget-category="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g)]
+    .map(match => ({ attributes: match[1], key: match[2], content: match[3] }));
+  function toggle(type, category, currency) {
+    const key = encodeURIComponent(JSON.stringify([type, category, currency]));
+    const entry = buttons().find(button => button.key === key);
+    assert.ok(entry, 'rendered category has an independent disclosure button');
+    const id = entry.attributes.match(/aria-controls="([^"]+)"/)[1];
+    const attributes = { 'aria-controls': id, 'aria-expanded': entry.attributes.match(/aria-expanded="([^"]+)"/)[1] };
+    const body = { hidden: attributes['aria-expanded'] === 'false' };
+    app.nodes.set(id, body);
+    const button = { dataset: { budgetCategory: key }, getAttribute: name => attributes[name], setAttribute: (name, value) => { attributes[name] = value; } };
+    // Invoke the real handler through its native-DOM boundary; browser QA covers focus/keyboard.
+    app.nodes.set('test-disclosure-button', button);
+    app.run("toggleBudgetCategory(document.getElementById('test-disclosure-button'))");
+    return { attributes, body, button };
+  }
+  return { app, buttons, toggle };
+}
+
+test('budget exposes only top-level disclosure controls with visible totals and escaped names', () => {
+  const { app, buttons } = budgetDisclosureFixture();
+  assert.equal(buttons().length, 4);
+  for (const button of buttons()) {
+    assert.match(button.attributes, /type="button"/);
+    assert.match(button.attributes, /aria-expanded="true"/);
+    assert.match(button.attributes, /aria-controls="budget-category-body-\d+"/);
+  }
+  assert.match(buttons().find(b => decodeURIComponent(b.key) === '["expense","Еда","RUB"]').content, /150,00/);
+  assert.match(app.nodes.get('budget-list').innerHTML, /Продукты/);
+  app.run(`budgetItems=[{id:'special',type:'expense',category:'<img src=x onerror="alert(1)">',amount:1,date:'2026-10-01'}];renderBudget()`);
+  assert.equal(buttons().length, 1);
+  assert.match(buttons()[0].content, /&lt;img/);
+  assert.doesNotMatch(app.nodes.get('budget-list').innerHTML, /<img/);
+  assert.match(buttons()[0].attributes, /onclick="toggleBudgetCategory\(this\)"/);
+  app.run('budgetItems=[];renderBudget()');
+  assert.equal(buttons().length, 0);
+});
+
+test('category toggles preserve financial data and only hide their own body', () => {
+  const { app, buttons, toggle } = budgetDisclosureFixture();
+  const beforeData = app.run('JSON.stringify(budgetItems)');
+  const beforeTotals = ['budget-income-total','budget-expense-total','budget-balance'].map(id => app.nodes.get(id).textContent);
+  const collapsed = toggle('expense', 'Еда', 'RUB');
+  assert.equal(collapsed.body.hidden, true);
+  assert.equal(collapsed.attributes['aria-expanded'], 'false');
+  // No full rerender on toggle: the focused button and list remain in place.
+  assert.equal(buttons().filter(b => b.attributes.includes('aria-expanded="false"')).length, 0);
+  app.run('renderBudget()');
+  assert.equal(buttons().filter(b => b.attributes.includes('aria-expanded="false"')).length, 1);
+  const food = buttons().find(b => decodeURIComponent(b.key) === '["expense","Еда","RUB"]');
+  const bodyId = food.attributes.match(/aria-controls="([^"]+)"/)[1];
+  assert.match(app.nodes.get('budget-list').innerHTML, new RegExp('id="'+bodyId+'"[^>]* hidden'));
+  assert.match(food.content, /150,00/);
+  assert.equal(app.run('JSON.stringify(budgetItems)'), beforeData);
+  assert.deepEqual(['budget-income-total','budget-expense-total','budget-balance'].map(id => app.nodes.get(id).textContent), beforeTotals);
+  assert.equal(app.financialWrites.length, 0);
+  const opened = toggle('expense', 'Еда', 'RUB');
+  assert.equal(opened.body.hidden, false);
+  assert.equal(opened.attributes['aria-expanded'], 'true');
+});
+
+test('category collapse survives month navigation but resets across accounts and page loads', async () => {
+  const { app, buttons, toggle } = budgetDisclosureFixture();
+  toggle('expense', 'Еда', 'RUB');
+  app.run('currentMonth=new Date(2026,10,1);renderBudget()');
+  assert.equal(buttons().filter(b => b.attributes.includes('aria-expanded="false"')).length, 1);
+  app.run('globalThis.savedBudget=budgetItems');
+  await app.authEvent('SIGNED_OUT', null);
+  app.run('budgetItems=savedBudget;irregularReady=true;renderBudget()');
+  assert.equal(buttons().filter(b => b.attributes.includes('aria-expanded="false"')).length, 0);
+  assert.equal(budgetDisclosureFixture().buttons().filter(b => b.attributes.includes('aria-expanded="false"')).length, 0);
 });
